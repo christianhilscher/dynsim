@@ -36,6 +36,7 @@ def SOEP_to_df_old(dataf):
     dataf = _numeric_employment_status(dataf)
     dataf = _numeric_laborforce(dataf)
     dataf = _numeric_working(dataf)
+    dataf = _numeric_hours(dataf)
     dataf = _numeric_migration(dataf)
     dataf = make_hh_vars(dataf)
 
@@ -64,17 +65,17 @@ def _numeric_employment_status(dataf):
     dataf = dataf.copy()
 
     dataf.loc[:, "emp"] = 0
+    dataf.loc[(dataf['employment_status'] == "Teilzeit"), "emp"] = 2
+    dataf.loc[(dataf['employment_status'] == "Vollzeit"), "emp"] = 3
     dataf.loc[(dataf['employment_status'] == "Bildung"), "emp"] = 0
-    dataf.loc[(dataf['employment_status'] == "Teilzeit"), "emp"] = 1
-    dataf.loc[(dataf['employment_status'] == "Vollzeit"), "emp"] = 2
-    dataf.loc[(dataf['employment_status'] == "Nicht erwerbstaetig"), "emp"] = 3
-    dataf.loc[(dataf['employment_status'] == "Rente"), "emp"] = 4
+    dataf.loc[(dataf['employment_status'] == "Nicht erwerbstaetig"), "emp"] = 0
+    dataf.loc[(dataf['employment_status'] == "Rente"), "emp"] = 1
 
     dataf.drop("employment_status", axis = 1, inplace = True)
     dataf.rename(columns={'emp': 'employment_status'}, inplace=True)
 
     dataf['fulltime'] = 0
-    dataf.loc[dataf['employment_status'] == 2, 'fulltime'] = 1
+    dataf.loc[dataf['employment_status'] == 3, 'fulltime'] = 1
 
     return dataf
 
@@ -83,6 +84,7 @@ def _numeric_laborforce(dataf):
 
     dataf.loc[:,'lfs'] = 0
     dataf.loc[dataf['pglfs'] == '[11] Working', 'lfs'] = 1
+    dataf.loc[dataf['pglfs'] == "[12] Working but NW past 7 days" , 'lfs'] = 1
 
     dataf.drop("pglfs", axis = 1, inplace = True)
     return dataf
@@ -91,14 +93,14 @@ def _numeric_working(dataf):
     dataf = dataf.copy()
 
     dataf.loc[:,'working'] = 0
-    dataf.loc[dataf['employment_status'] == 1, 'working'] = 1
     dataf.loc[dataf['employment_status'] == 2, 'working'] = 1
+    dataf.loc[dataf['employment_status'] == 3, 'working'] = 1
     return dataf
 
 def _numeric_migration(dataf):
     dataf = dataf.copy()
 
-    dataf['migration'] = np.NaN
+    dataf['migration'] = 0
 
     dataf.loc[dataf['migback'] == 0, 'migration'] = 1
     dataf.loc[dataf['migback'] == "[1] kein Migrationshintergrund", 'migration'] = 0
@@ -106,6 +108,18 @@ def _numeric_migration(dataf):
     dataf.drop('migback', axis=1, inplace=True)
     dataf.rename(columns={'migration': 'migback'}, inplace=True)
 
+    return dataf
+
+def _numeric_hours(dataf):
+    dataf = dataf.copy()
+
+    condition = [type(typ)==str for typ in dataf['hours']]
+    dataf.loc[condition, 'hours'] = np.nan
+
+
+    dataf['hours'] = dataf['hours'].astype(np.float64)
+    dataf.loc[(dataf["hours"].isna()) & (dataf["employment_status"] == 0) & (dataf["lfs"]==0), "hours"] = 0
+    dataf.loc[(dataf["hours"].isna()) & (dataf["employment_status"] == 1) & (dataf["lfs"]==0), "hours"] = 0
     return dataf
 
 # Making household wide variables
@@ -116,6 +130,7 @@ def make_hh_vars(dataf):
     dataf = _hh_income(dataf)
     dataf = _hh_age_youngest(dataf)
     dataf = _hh_fraction_working(dataf)
+    dataf = _indicate_birth(dataf)
     dataf.reset_index(inplace=True, drop=True)
     return dataf
 
@@ -175,4 +190,19 @@ def _hh_age_youngest(dataf):
 
     smallest_age = dataf.groupby(level=['year', 'hid'])['age'].min()
     dataf['hh_youngest_age'] = smallest_age
+    return dataf
+
+def _indicate_birth(dataf):
+    """
+    Indictaes whether a mother has had a baby in that particular year
+    """
+
+    dataf = dataf.copy()
+
+    minage = dataf.groupby(level=['year', 'hid'])['age'].min()
+    dataf["minage"] = minage
+    dataf["birth"] = 0
+    dataf.loc[(dataf["minage"]==0)&(dataf["female"]==1)&(dataf["child"]==0), "birth"] = 1
+    dataf.drop("minage", axis=1, inplace=True)
+
     return dataf

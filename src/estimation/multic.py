@@ -203,8 +203,8 @@ def _estimate(dataf, dep_var, type):
 
 
 
-#
-# df = pd.read_pickle(input_path + 'illmitz10_reduced').dropna()
+
+# df = pd.read_pickle(input_path + 'merged').dropna()
 # df1 = getdf(df)
 #
 # _estimate(df1, "employment_status", "multiclass")

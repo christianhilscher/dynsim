@@ -5,7 +5,7 @@ import os
 
 
 ###############################################################################
-current_week = "30"
+current_week = "36"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -31,8 +31,10 @@ def make_ana_df(real_dici, predicted_dici):
 
     relevant = df_real[df_real["predicted"]==0]
 
-    together = pd.merge(relevant, df_predicted_ml, on=["pid", "year"])
-    together = pd.merge(together, df_predicted_standard, on=["pid", "year"])
+    together = pd.merge(relevant, df_predicted_ml,
+                        on=["pid", "year"], suffixes=["_real", "_ml"])
+    together = pd.merge(together, df_predicted_standard,
+                        on=["pid", "year"], suffixes=["", "_standard"])
 
     together.sort_values(by=["pid", "year"])
     together["period_ahead"] = 0
@@ -62,6 +64,9 @@ def make_cohort(dataf, birthyears):
     dataf = dataf.loc[condition]
     dataf = dataf[dataf["east"]==0]
 
+    dataf_renamed = dataf.iloc[:,74:110].add_suffix("_standard")
+    dataf = pd.concat([dataf.iloc[:,:73], dataf_renamed, dataf.iloc[:,110]], axis=1)
+
     return dataf
 
 
@@ -69,6 +74,8 @@ df_analysis = make_ana_df(dici_full, dici_est)
 
 cohorts = np.arange(1945, 1955)
 df_out = make_cohort(df_analysis, cohorts)
+df_out
 
+df_analysis.columns.tolist()
 
-df_out.to_pickle(output_week + "df_analysis_full")
+df_out.to_pickle(output_week + "df_analysis")

@@ -11,7 +11,7 @@ from bokeh.models import ColumnDataSource, FactorRange
 from bokeh.palettes import Spectral6
 from bokeh.transform import factor_cmap
 ###############################################################################
-current_week = 30
+current_week = 36
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################

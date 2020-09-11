@@ -27,7 +27,7 @@ os.chdir(cwd)
 ##############################################################################
 
 
-df = pd.read_pickle(input_path + 'illmitz10').dropna()
+df = pd.read_pickle(input_path + 'merged').dropna()
 df1 = getdf(df)
 df2 = df1.drop_duplicates(subset="pid")
 

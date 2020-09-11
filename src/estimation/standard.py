@@ -586,9 +586,9 @@ def estimate_earnings(dataf):
                 open(model_path + "earnings_scaler", 'wb'))
 
 
-# df = pd.read_pickle(input_path + 'illmitz10_reduced').dropna()
+# df = pd.read_pickle(input_path + 'workingage').dropna()
 # df1 = getdf(df)
-
+#
 # estimate_lfs(df1)
 # estimate_working(df1)
 # estimate_fulltime(df1)

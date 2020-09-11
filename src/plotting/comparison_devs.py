@@ -11,7 +11,7 @@ from bokeh.models import ColumnDataSource, FactorRange
 from bokeh.palettes import Spectral6
 from bokeh.transform import factor_cmap
 ###############################################################################
-current_week = 30
+current_week = 36
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -24,7 +24,7 @@ os.chdir(plot_path)
 def get_data(dataf, into_future, variable, metric):
     dataf = dataf.copy()
 
-    dataf = dataf[dataf["hours"]>0]
+    dataf = dataf[dataf["hours_real"]>0]
 
     diff_ml = []
     diff_standard = []
@@ -70,8 +70,8 @@ def get_data(dataf, into_future, variable, metric):
 def _get_devs(dataf, ahead, variable):
     dataf = dataf.copy()
 
-    diff_ml = dataf[variable + "_x"] - dataf[variable + "_y"]
-    diff_standard = dataf[variable + "_x"] - dataf[variable]
+    diff_ml = dataf[variable + "_real"] - dataf[variable + "_ml"]
+    diff_standard = dataf[variable + "_real"] - dataf[variable + "_standard"]
 
     return diff_ml, diff_standard
 

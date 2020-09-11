@@ -9,7 +9,7 @@ sns.set(style="darkgrid")
 
 from bokeh.plotting import show, output_file
 ###############################################################################
-current_week = "illmitz_est_reduced"
+current_week = "36"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
