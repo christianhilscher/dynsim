@@ -9,12 +9,12 @@ from sklearn.preprocessing import StandardScaler
 ##############################################################################
 ##############################################################################
 input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
+model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/modelsCV/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
 sim_path = "/Users/christianhilscher/desktop/dynsim/src/sim/"
 
 os.chdir(estimation_path)
-from standard import getdf, data_lfs, data_working, data_fulltime, data_hours, data_earnings
+from standard import getdf, data_retired, data_working, data_fulltime, data_hours, data_earnings
 from multic import data_general
 os.chdir(sim_path)
 ##############################################################################
@@ -83,20 +83,20 @@ def _ext(X, variable):
                             variable + '_extended.txt')
     pred = estimator.predict(X_scaled)
 
-    if variable == "hours":
+    if variable == "employment_status":
         # Inverse transform regression results
-        predictions = []
+        predictions = np.empty(len(pred))
 
-        for x in pred:
-            predictions.append(np.argmax(x))
+        for (i, x) in enumerate(pred):
+            predictions[i] = np.argmax(x)
         # scaler = pd.read_pickle(model_path + variable + "_scaler")
         # pred_scaled = scaler.inverse_transform(pred)
     else:
         # Make binary prediction to straight 0 and 1
-        pred_scaled = pred
+        predictions = pred
 
-    pred_scaled[pred_scaled<0] = 0
-    return pred_scaled
+    predictions[predictions<0] = 0
+    return predictions
 ###############################################################################
 # Making household wide variables
 def make_hh_vars(dataf):
@@ -157,15 +157,15 @@ def _hh_age_youngest(dataf):
 
 ##############################################################################
 
-def sim_lfs(dataf, type):
+def sim_retired(dataf, type):
     dataf = dataf.copy()
 
     if type == 'standard':
-        X = data_lfs(dataf, estimate=0)
-        predictions = _logit(X, 'lfs')
+        X = data_retired(dataf, estimate=0)
+        predictions = _logit(X, 'retired')
     elif type == 'ml':
-        X = data_lfs(dataf, estimate=0)
-        predictions = _ml(X, 'lfs')
+        X = data_retired(dataf, estimate=0)
+        predictions = _ml(X, 'retired')
     elif type == "ext":
         predictions = np.zeros(len(dataf))
     else:
@@ -246,3 +246,43 @@ def sim_multi_employment(dataf):
     predictions = _ext(X, "employment_status")
 
     return predictions
+
+
+def to_category(dataf):
+    dataf = dataf.copy()
+
+    ne = (dataf["working"]==0) & (dataf["retired"] == 0)
+    teilzeit = (dataf["working"]==1)&(dataf["fulltime"]==0)
+    vollzeit = (dataf["working"]==1)&(dataf["fulltime"]==1)
+
+    dataf.loc[ne, "employment_status"] = 0
+    dataf.loc[dataf["retired"]==1, "employment_status"] = 1
+    dataf.loc[teilzeit, "employment_status"] = 2
+    dataf.loc[vollzeit, "employment_status"] = 3
+
+    return dataf
+
+def to_binary(dataf):
+    dataf = dataf.copy()
+
+    ne = dataf["employment_status"] == 0
+    dataf.loc[ne, "working"] = 0
+    dataf.loc[ne, "retired"] = 0
+    dataf.loc[ne, "fulltime"] = 0
+
+    rente = dataf["employment_status"] == 1
+    dataf.loc[rente, "working"] = 0
+    dataf.loc[rente, "fulltime"] = 0
+    dataf.loc[rente, "retired"] = 1
+
+    teilzeit = dataf["employment_status"] == 2
+    dataf.loc[teilzeit, "working"] = 1
+    dataf.loc[teilzeit, "fulltime"] = 0
+    dataf.loc[teilzeit, "retired"] = 0
+
+    vollzeit = dataf["employment_status"] == 3
+    dataf.loc[vollzeit, "working"] = 1
+    dataf.loc[vollzeit, "fulltime"] = 1
+    dataf.loc[vollzeit, "retired"] = 0
+
+    return dataf

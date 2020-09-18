@@ -65,7 +65,44 @@ def _indicate_birth(dataf):
 
     return dataf
 
+def to_category(dataf):
+    dataf = dataf.copy()
 
+    ne = (dataf["working"]==0) & (dataf["retired"] == 0)
+    teilzeit = (dataf["working"]==1)&(dataf["fulltime"]==0)
+    vollzeit = (dataf["working"]==1)&(dataf["fulltime"]==1)
+
+    dataf.loc[ne, "employment_status"] = 0
+    dataf.loc[dataf["retired"]==1, "employment_status"] = 1
+    dataf.loc[teilzeit, "employment_status"] = 2
+    dataf.loc[vollzeit, "employment_status"] = 3
+
+    return dataf
+
+def to_binary(dataf):
+    dataf = dataf.copy()
+
+    ne = dataf["employment_status"] == 0
+    dataf.loc[ne, "working"] = 0
+    dataf.loc[ne, "retired"] = 0
+    dataf.loc[ne, "fulltime"] = 0
+
+    rente = dataf["employment_status"] == 1
+    dataf.loc[rente, "working"] = 0
+    dataf.loc[rente, "fulltime"] = 0
+    dataf.loc[rente, "retired"] = 1
+
+    teilzeit = dataf["employment_status"] == 2
+    dataf.loc[teilzeit, "working"] = 1
+    dataf.loc[teilzeit, "fulltime"] = 0
+    dataf.loc[teilzeit, "retired"] = 0
+
+    vollzeit = dataf["employment_status"] == 3
+    dataf.loc[vollzeit, "working"] = 1
+    dataf.loc[vollzeit, "fulltime"] = 1
+    dataf.loc[vollzeit, "retired"] = 0
+
+    return dataf
 
 
 # Making new dataset from original SOEP
@@ -113,27 +150,32 @@ orig_df = SOEP_to_df_old(old_df)
 finish = pd.merge(try1, orig_df, on=["pid", "year"], how="outer")
 orig_df.shape
 
+finish.loc[finish["retired"].isna(), "retired"] = "[2] Nein"
+
+finish["ret"] = np.nan
+finish.loc[finish["retired"] == "[2] Nein", "ret"] = 0
+finish.loc[finish["retired"] == "[1] Ja", "ret"] = 1
+finish.drop("retired", axis = 1, inplace = True)
+finish.rename(columns={'ret': 'retired'}, inplace=True)
+
+
 names_list.remove("pid")
 names_list.remove("year")
+names_list.remove("retired")
 for name in names_list:
     finish[name] = finish[name+"_x"]
     finish[name].fillna(finish[name+"_y"], inplace=True)
 
 names_list.append("year")
 names_list.append("pid")
+names_list.append("retired")
 names_list
 finish_small = finish[names_list]
 finish_final = make_hh_vars(finish_small)
 finish_final = finish_final[finish_final["age"]<99]
+finish_final = to_binary(finish_final)
 finish_final.dropna().to_pickle(input_path + "merged")
 
 
 cond = [age in np.arange(16, 66) for age in finish_final["age"]]
 finish_final[cond].dropna().to_pickle(input_path + "workingage")
-
-sum(full_df["pglfs"] == "[6] NW-unemployed")
-
-full_df.loc[full_df["pglfs"]=="[6] NW-unemployed" , "syear"] = 3000
-
-
-sum(finish_final["employment_status"]==4)

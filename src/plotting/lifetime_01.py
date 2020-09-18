@@ -30,45 +30,59 @@ output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
 sim_path = "/Users/christianhilscher/desktop/dynsim/src/sim/"
 
+current_week = "37"
+output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
+
+
+
 def make_cohort(dataf, birthyears):
     dataf = dataf.copy()
 
-    birthyear = dataf["year"] - dataf["age"]
+    birthyear = dataf["year"] - dataf["age_real"]
     condition = [by in birthyears for by in birthyear]
     dataf = dataf.loc[condition]
-    dataf = dataf[dataf["east"]==0]
+    dataf = dataf[dataf["east_real"]==0]
 
 
     return dataf
 
 dataf = pd.read_pickle(input_path + "merged")
+df = pd.read_pickle(output_week + "df_analysis")
 
 palette = ["#c9d9d3", "#718dbf", "#e84d60", "#648450"]
 
 
 
 cohorts = np.arange(1945, 1955)
-df = make_cohort(dataf, cohorts)
+df = make_cohort(df, cohorts)
 
-df = df[df["female"]==0]
+df = df[df["female_real"]==0]
 #df = dataf[(dataf["female"]==1)&(dataf["east"]==1)]
-
+type="_ml"
 
 ylist = []
 list0 = []
 list1 = []
 list2 = []
 list3 = []
-interv = np.sort(df["age"].unique())
+interv = np.sort(df["age_real"].unique())
+
+
 
 for a in interv:
-    df_rel = df[df["age"]==a]
+    df_rel = df[df["age_real"]==a]
     n = len(df_rel)
 
-    status0 = sum(df_rel["employment_status"] == 0)/n
-    status1 = sum(df_rel["employment_status"] == 1)/n
-    status2 = sum(df_rel["employment_status"] == 2)/n
-    status3 = sum(df_rel["employment_status"] == 3)/n
+    ne = (df_rel["retired" + type] == 0)&(df_rel["working" + type]==0)
+    rente = df_rel["retired" + type]==1
+    teilzeit = (df_rel["working" + type]==1)&(df_rel["fulltime" + type]==0)
+    vollzeit = (df_rel["working" + type]==1)&(df_rel["fulltime" + type]==1)
+
+
+    status0 = sum(ne)/n
+    status1 = sum(rente)/n
+    status2 = sum(teilzeit)/n
+    status3 = sum(vollzeit)/n
 
     ylist.append(str(a))
     list0.append(status0)
@@ -88,7 +102,7 @@ alllist = ["3", "2", "0", "1"]
 labels = ["Vollzeit", "Teilzeit", "N.E.", "Rente"]
 
 
-p = figure(x_range=ylist, plot_height=250, plot_width=1500, title="Employment Status by age: Males, West Germany")
+p = figure(x_range=ylist, plot_height=250, plot_width=1500, title="Employment Status by age: Males, West Germany/ Type: " + type)
 
 p.vbar_stack(alllist, x='age', width=0.9, color=palette, source=dici,
              legend_label=labels)
@@ -102,3 +116,10 @@ p.legend.location = "bottom_left"
 p.legend.orientation = "horizontal"
 
 show(p)
+
+
+df["retired_real"].describe()
+df["retired_ml"].describe()
+df["retired_standard"].describe()
+
+dataf["retired"].describe()

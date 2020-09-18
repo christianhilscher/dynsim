@@ -85,7 +85,8 @@ def SOEP_to_df(dataf):
             'n_people',
             'n_children',
             'hh_frac_working',
-            'birth']
+            'birth',
+            'retired']
 
     dataf = dataf[keep]
 
@@ -269,6 +270,9 @@ def _numeric_working(dataf):
     dataf.loc[(dataf['employment_status'] == 2) & \
               (dataf['employment_status'] == 3) , 'working'] = 1
     dataf.loc[(dataf["lfs"]==1)&(dataf["hours"]>0), "working"] = 1
+
+    dataf.loc[dataf["employment_status"]==0, "working"] = 0
+    dataf.loc[dataf["employment_status"]==1, "working"] = 0
 
     dataf.loc[dataf['employment_status'] == 2, 'parttime'] = 1
     dataf.loc[dataf['employment_status'] == 3, 'fulltime'] = 1

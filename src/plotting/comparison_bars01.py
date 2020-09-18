@@ -11,7 +11,7 @@ from bokeh.models import ColumnDataSource, FactorRange
 from bokeh.palettes import Spectral6
 from bokeh.transform import factor_cmap
 ###############################################################################
-current_week = "36"
+current_week = "37"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -30,9 +30,9 @@ def make_plot(dataf, into_future):
 
     for i, ahead in enumerate(into_future):
         df_ana = dataf[dataf["period_ahead"]==ahead]
-        real_value = df_ana[variable + "_x"].mean()
-        ml_value = df_ana[variable + "_y"].mean()
-        standard_value = df_ana[variable].mean()
+        real_value = df_ana[variable + "_real"].mean()
+        ml_value = df_ana[variable + "_ml"].mean()
+        standard_value = df_ana[variable+"_standard"].mean()
 
         diff_ml[i] = ml_value
         diff_standard[i] = standard_value

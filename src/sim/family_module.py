@@ -242,7 +242,7 @@ def make_new_humans(dataf):
                  'education',
                  'employment_status',
                  'fulltime',
-                 'lfs',
+                 'retired',
                  'working',
                  'birth']
 

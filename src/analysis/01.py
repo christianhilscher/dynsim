@@ -5,7 +5,7 @@ import os
 
 
 ###############################################################################
-current_week = "36"
+current_week = "37"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -28,6 +28,7 @@ def make_ana_df(real_dici, predicted_dici):
     df_real = real_dici["ml"]
     df_predicted_ml = predicted_dici["ml"]
     df_predicted_standard = predicted_dici["standard"]
+    df_predicted_ext = predicted_dici["ext"]
 
     relevant = df_real[df_real["predicted"]==0]
 
@@ -35,6 +36,8 @@ def make_ana_df(real_dici, predicted_dici):
                         on=["pid", "year"], suffixes=["_real", "_ml"])
     together = pd.merge(together, df_predicted_standard,
                         on=["pid", "year"], suffixes=["", "_standard"])
+    together = pd.merge(together, df_predicted_ext,
+                        on=["pid", "year"], suffixes=["", "_ext"])
 
     together.sort_values(by=["pid", "year"])
     together["period_ahead"] = 0
@@ -64,8 +67,8 @@ def make_cohort(dataf, birthyears):
     dataf = dataf.loc[condition]
     dataf = dataf[dataf["east"]==0]
 
-    dataf_renamed = dataf.iloc[:,74:110].add_suffix("_standard")
-    dataf = pd.concat([dataf.iloc[:,:73], dataf_renamed, dataf.iloc[:,110]], axis=1)
+    dataf_renamed = dataf.iloc[:,76:113].add_suffix("_standard")
+    dataf = pd.concat([dataf.iloc[:,:76], dataf_renamed, dataf.iloc[:,113:]], axis=1)
 
     return dataf
 
@@ -74,8 +77,30 @@ df_analysis = make_ana_df(dici_full, dici_est)
 
 cohorts = np.arange(1945, 1955)
 df_out = make_cohort(df_analysis, cohorts)
-df_out
-
-df_analysis.columns.tolist()
-
+df_out.shape
 df_out.to_pickle(output_week + "df_analysis")
+
+
+df_analysis.iloc[:,113:151].columns.tolist()
+
+df_analysis.iloc[:,113:151]
+
+
+
+y = 8
+df_out.loc[df_out["period_ahead"]==y,"retired_real"].mean()
+df_out.loc[df_out["period_ahead"]==y, "retired_ml"].mean()
+df_out.loc[df_out["period_ahead"]==y, "retired_standard"].mean()
+df_out.loc[df_out["period_ahead"]==y, "retired_ext"].mean()
+
+a = 80
+df_out.loc[df_out["age_real"]<a, "fulltime_real"].mean()
+df_out.loc[df_out["age_real"]<a, "fulltime_ml"].mean()
+df_out.loc[df_out["age_real"]<a, "fulltime_standard"].mean()
+df_out.loc[df_out["age_real"]<a, "fulltime_ext"].mean()
+
+
+df_out.loc[:,"working_real"].mean()
+df_out.loc[:, "retired_ml"].mean()
+df_out.loc[:, "retired_standard"].mean()
+df_out.loc[:, "retired_ext"].mean()

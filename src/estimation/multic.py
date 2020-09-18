@@ -12,7 +12,7 @@ import lightgbm as lgb
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
 input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
+model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/modelsCV/"
 
 os.chdir("/Users/christianhilscher/desktop/dynsim/src/estimation/")
 

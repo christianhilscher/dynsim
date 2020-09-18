@@ -12,7 +12,7 @@ from bokeh.palettes import Spectral6
 from bokeh.transform import factor_cmap
 import matplotlib.pyplot as plt
 ###############################################################################
-current_week = 36
+current_week = 37
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -23,7 +23,7 @@ os.chdir(plot_path)
 
 df = pd.read_pickle(output_week + "df_analysis")
 
-df = df[(df["female_real"]==1)&(df["age_real"]<45)]
+#df = df[(df["female_real"]==1)&(df["age_real"]<45)]
 
 
 variable = "hours"
@@ -89,5 +89,4 @@ for a in ahead:
     axs[4,0].set_title("+40 hours predicted")
     name = "Crosstable for a " + str(a) + " year ahead prediction"
     fig.suptitle(name)
-    plt.savefig(output_week + "/pngs/cross_" + str(a) + "_female_young.png")
- 
+    plt.savefig(output_week + "pngs/cross_" + str(a) + ".png")
