@@ -52,21 +52,22 @@ def _ols(X, variable):
 
     scaler = pd.read_pickle(model_path + variable + "_scaler")
     pred_scaled = scaler.inverse_transform(pred)
+    pred_scaled[pred_scaled<0] = 0
 
     return pred_scaled
 
 def _ml(X, variable):
     X = X.copy()
 
-    X_scaled = scale_data(X, variable)
+    X_scaled = scale_data(X)
     estimator = lgb.Booster(model_file = model_path + variable + '_ml.txt')
     pred = estimator.predict(X_scaled)
 
-    if variable in ['hours', 'earnings']:
-        pred_scaled = pred
+    if variable in ['hours', 'gross_earnings']:
+        # pred_scaled = pred
         # Inverse transform regression results
-        # scaler = pd.read_pickle(model_path + variable + "_scaler")
-        # pred_scaled = scaler.inverse_transform(pred)
+        scaler = pd.read_pickle(model_path + variable + "_scaler")
+        pred_scaled = scaler.inverse_transform(pred)
     else:
         # Make binary prediction to straight 0 and 1
         pred_scaled = np.zeros(len(pred))
@@ -89,11 +90,11 @@ def _ext(X, variable):
 
         for (i, x) in enumerate(pred):
             predictions[i] = np.argmax(x)
-        # scaler = pd.read_pickle(model_path + variable + "_scaler")
-        # pred_scaled = scaler.inverse_transform(pred)
+
     else:
-        # Make binary prediction to straight 0 and 1
         predictions = pred
+        # scaler = pd.read_pickle(model_path + variable + "_scaler_ext")
+        # predictions = scaler.inverse_transform(pred)
 
     predictions[predictions<0] = 0
     return predictions
@@ -227,10 +228,10 @@ def sim_earnings(dataf, type):
 
     if type == 'standard':
         X = data_earnings(dataf, estimate=0)
-        predictions = _ols(X, 'earnings')
+        predictions = _ols(X, 'gross_earnings')
     elif type == 'ml':
         X = data_earnings(dataf, estimate=0)
-        predictions = _ml(X, 'earnings')
+        predictions = _ml(X, 'gross_earnings')
     elif type == "ext":
         X = data_general(dataf, "gross_earnings", estimate=0)
         predictions = _ext(X, "gross_earnings")

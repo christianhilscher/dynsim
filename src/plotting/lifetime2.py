@@ -30,7 +30,7 @@ output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
 sim_path = "/Users/christianhilscher/desktop/dynsim/src/sim/"
 
-current_week = "37"
+current_week = "38"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 
 def make_cohort(dataf, birthyears):
@@ -45,7 +45,8 @@ def make_cohort(dataf, birthyears):
     return dataf
 
 dataf = pd.read_pickle(input_path + "merged")
-dataf1 = pd.read_pickle(output_week + "df_analysis")
+dataf1 = pd.read_pickle(output_week + "df_analysis_full")
+dataf2 = pd.read_pickle(output_week + "df_analysis_workingage")
 
 palette = ["#c9d9d3", "#718dbf", "#e84d60", "#648450"]
 
@@ -54,7 +55,7 @@ palette = ["#c9d9d3", "#718dbf", "#e84d60", "#648450"]
 cohorts = np.arange(1945, 1955)
 df = make_cohort(dataf1, cohorts)
 
-df = df[df["female_real"]==1]
+#df = df[df["female_real"]==1]
 #df = dataf[(dataf["female"]==1)&(dataf["east"]==1)]
 
 ts = ["real", "standard", "ml"]
@@ -108,6 +109,3 @@ for type in ts:
     p.legend.orientation = "horizontal"
 
     show(p)
-
-
-    

@@ -12,7 +12,7 @@ import lightgbm as lgb
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
 input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/modelsCV/"
+model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/modelsWA_CV/"
 
 def getdf(dataf):
     dataf = dataf.copy()
@@ -605,13 +605,13 @@ def estimate_earnings(dataf):
     ml = cvmodl.best_estimator_.booster_
 
     pickle.dump(ols,
-                open(model_path + "earnings_ols", 'wb'))
-    ml.save_model(model_path + "earnings_ml.txt")
+                open(model_path + "gross_earnings_ols", 'wb'))
+    ml.save_model(model_path + "gross_earnings_ml.txt")
     pickle.dump(dict['scaler'],
-                open(model_path + "earnings_scaler", 'wb'))
+                open(model_path + "gross_earnings_scaler", 'wb'))
 
 
-# df = pd.read_pickle(input_path + 'merged').dropna()
+# df = pd.read_pickle(input_path + 'workingage').dropna()
 # df1 = getdf(df)
 #
 # estimate_retired(df1)

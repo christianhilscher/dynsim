@@ -9,7 +9,7 @@ sns.set(style="darkgrid")
 
 from bokeh.plotting import show, output_file
 ###############################################################################
-current_week = "36"
+current_week = "38"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -23,7 +23,7 @@ dataf = pd.read_pickle(output_path + "filled_dici_illmitz_est_reduced.pkl")
 
 ###############################################################################
 # Comparing variable means
-var_list = ['lfs', 'working', 'fulltime', 'hours', 'gross_earnings', 'birth', 'married']
+var_list = [working', 'fulltime', 'hours', 'gross_earnings', 'birth', 'married']
 
 variable_means(dataf, var_list, output_week)
 

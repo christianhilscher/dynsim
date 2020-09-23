@@ -12,7 +12,7 @@ from bokeh.palettes import Spectral6
 from bokeh.transform import factor_cmap
 import matplotlib.pyplot as plt
 ###############################################################################
-current_week = 37
+current_week = 38
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -21,7 +21,7 @@ output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 plot_path = "/Users/christianhilscher/Desktop/dynsim/src/plotting/"
 os.chdir(plot_path)
 
-df = pd.read_pickle(output_week + "df_analysis")
+df = pd.read_pickle(output_week + "df_analysis_full")
 
 #df = df[(df["female_real"]==1)&(df["age_real"]<45)]
 

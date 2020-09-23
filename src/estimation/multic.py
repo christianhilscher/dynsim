@@ -100,7 +100,7 @@ def _prepare_classifier(dataf):
                 'weights': weights_train}
     return out_dici
 
-def _prepare_regressor(dataf):
+def _prepare_regressor(dataf, dep_var):
     dataf = dataf.copy()
 
     y = dataf['dep_var']
@@ -147,6 +147,8 @@ def _prepare_regressor(dataf):
                 'lgb_test': lgb_test,
                 'features': feature_names,
                 'weights': weights_train}
+    pickle.dump(y_test_scaler,
+                open(model_path + dep_var + "_scaler_ext", 'wb'))
     return out_dici
 
 def _estimate(dataf, dep_var, type):
@@ -156,7 +158,7 @@ def _estimate(dataf, dep_var, type):
     dataf.dropna(inplace=True)
 
     if type == 'regression':
-        dict = _prepare_regressor(dataf)
+        dict = _prepare_regressor(dataf, dep_var)
         params = {'boosting_type' : 'gbdt',
                   'n_estimators': 350,
                   'objective' : 'l2',

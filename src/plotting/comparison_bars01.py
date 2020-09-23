@@ -11,7 +11,7 @@ from bokeh.models import ColumnDataSource, FactorRange
 from bokeh.palettes import Spectral6
 from bokeh.transform import factor_cmap
 ###############################################################################
-current_week = "37"
+current_week = "38"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -19,6 +19,8 @@ input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
 output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 plot_path = "/Users/christianhilscher/Desktop/dynsim/src/plotting/"
 os.chdir(plot_path)
+
+palette = ["#c9d9d3", "#718dbf", "#e84d60", "#648450"]
 
 
 def make_plot(dataf, into_future):
@@ -51,7 +53,7 @@ def make_plot(dataf, into_future):
 
     s = ColumnDataSource(data=dict(x=x, counts=counts))
     p = figure(x_range=FactorRange(*x), title = name)
-    p.vbar(x='x', top='counts', width=0.9, source=s,fill_color=factor_cmap('x', palette=Spectral6, factors=types, start=1, end=2))
+    p.vbar(x='x', top='counts', width=0.9, source=s,fill_color=factor_cmap('x', palette=palette, factors=types, start=1, end=2))
     p.y_range.start = 0
     p.x_range.range_padding = 0.1
     p.xaxis.major_label_orientation = 1
@@ -60,10 +62,10 @@ def make_plot(dataf, into_future):
     return p
 
 
-df = pd.read_pickle(output_week + "df_analysis")
+df = pd.read_pickle(output_week + "df_analysis_full")
 
-into_future = np.arange(1, len(df["period_ahead"].unique()), 3)
-variable = "fulltime"
+into_future = np.arange(1, len(df["period_ahead"].unique()), 4)
+variable = "gross_earnings"
 
 a = make_plot(df, into_future)
 output_file(output_week + variable + ".html")

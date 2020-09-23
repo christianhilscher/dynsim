@@ -579,10 +579,10 @@ def estimate_earnings(dataf):
                    early_stopping_rounds = 5)
 
     pickle.dump(ols,
-                open(model_path + "earnings_ols", 'wb'))
-    ml.save_model(model_path + "earnings_ml.txt")
+                open(model_path + "gross_earnings_ols", 'wb'))
+    ml.save_model(model_path + "gross_earnings_ml.txt")
     pickle.dump(dict['scaler'],
-                open(model_path + "earnings_scaler", 'wb'))
+                open(model_path + "gross_earnings_scaler", 'wb'))
 
 
 # df = pd.read_pickle(input_path + 'merged').dropna()

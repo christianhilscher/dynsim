@@ -127,6 +127,8 @@ def run_work_module(dataf, type):
             fulltime = 0
         dataf.loc[dataf['working'] == 1, 'fulltime'] = fulltime
 
+        dataf = to_category(dataf)
+
     if np.sum(working)>0:
         hours = sim_hours(dataf[dataf['working'] == 1], type)
     else:
