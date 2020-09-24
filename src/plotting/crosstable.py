@@ -25,6 +25,8 @@ df = pd.read_pickle(output_week + "df_analysis_full")
 
 #df = df[(df["female_real"]==1)&(df["age_real"]<45)]
 
+palette = ["#c9d9d3", "#718dbf", "#e84d60", "#648450"]
+palette[0:3]
 
 variable = "hours"
 df["ml_deviation"] = np.abs(df[variable + "_real"] - df[variable + "_ml"])
@@ -60,21 +62,25 @@ for a in ahead:
     counts_real[3] = sum((df_ana["hours_real"]>boundaries[2]) & (df_ana["hours_real"]<boundaries[3]))
     counts_real[4] = sum(df_ana["hours_real"]>boundaries[3])
 
+    counts_real = counts_real/len(df_ana)
+    counts_ml = counts_ml/len(df_ana)
+    counts_standard = counts_standard/len(df_ana)
+
 
     fig, axs = plt.subplots(5,5, figsize=(18,18), sharey="row")
     types = ["ml", "standard", "real"]
 
 
     for r in np.arange(0,5):
-        axs[r, 0].bar(types, [counts_ml[r], counts_standard[r], counts_real[0]], color=["c", "b", "k"])
+        axs[r, 0].bar(types, [counts_ml[r], counts_standard[r], counts_real[0]], color=palette[0:len(types)])
 
-        axs[r, 1].bar(types, [counts_ml[r], counts_standard[r], counts_real[1]], color=["c", "b", "k"])
+        axs[r, 1].bar(types, [counts_ml[r], counts_standard[r], counts_real[1]], color=palette[0:len(types)])
 
-        axs[r, 2].bar(types, [counts_ml[r], counts_standard[r], counts_real[2]], color=["c", "b", "k"])
+        axs[r, 2].bar(types, [counts_ml[r], counts_standard[r], counts_real[2]], color=palette[0:len(types)])
 
-        axs[r, 3].bar(types, [counts_ml[r], counts_standard[r], counts_real[3]], color=["c", "b", "k"])
+        axs[r, 3].bar(types, [counts_ml[r], counts_standard[r], counts_real[3]], color=palette[0:len(types)])
 
-        axs[r, 4].bar(types, [counts_ml[r], counts_standard[r], counts_real[4]], color=["c", "b", "k"])
+        axs[r, 4].bar(types, [counts_ml[r], counts_standard[r], counts_real[4]], color=palette[0:len(types)])
 
     axs[0,0].set_title("0-9 hours in reality")
     axs[0,1].set_title("9-19 hours in reality")
@@ -87,6 +93,11 @@ for a in ahead:
     axs[2,0].set_title("19-29 hours predicted")
     axs[3,0].set_title("29-39 hours predicted")
     axs[4,0].set_title("+40 hours predicted")
+
+    for i in np.arange(5):
+        for j in np.arange(5):
+            axs[i, j].set_ylim([0, 0.7])
+
     name = "Crosstable for a " + str(a) + " year ahead prediction"
     fig.suptitle(name)
     plt.savefig(output_week + "pngs/cross_" + str(a) + ".png")

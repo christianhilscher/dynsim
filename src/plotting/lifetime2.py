@@ -55,12 +55,12 @@ palette = ["#c9d9d3", "#718dbf", "#e84d60", "#648450"]
 cohorts = np.arange(1945, 1955)
 df = make_cohort(dataf1, cohorts)
 
-#df = df[df["female_real"]==1]
+df = df[df["female_real"]==1]
 #df = dataf[(dataf["female"]==1)&(dataf["east"]==1)]
-
-ts = ["real", "standard", "ml"]
+ts = []
+ts = ["standard", "ml", "real"]
 for type in ts:
-
+    print(type)
     ylist = []
     list0 = []
     list1 = []
@@ -109,3 +109,5 @@ for type in ts:
     p.legend.orientation = "horizontal"
 
     show(p)
+
+len(dataf1["pid"].unique())

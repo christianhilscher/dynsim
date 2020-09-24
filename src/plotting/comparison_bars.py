@@ -77,7 +77,7 @@ def make_plot(dataf, var):
 
     return p
 
-var = "retired"
+var = "working"
 
 pic = make_plot(df, var)
 output_file(output_week + var + ".html")

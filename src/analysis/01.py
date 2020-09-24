@@ -72,6 +72,14 @@ def make_cohort(dataf, birthyears):
 
     return dataf
 
+def first_year(dataf):
+    a = (dataf.groupby("pid")["year"].min()).to_frame()
+    a.reset_index(inplace=True)
+    b = a.loc[a["year"]==min(a["year"]), "pid"].tolist()
+
+    c = [pid in b for pid in dataf["pid"]]
+    dataf = dataf[c]
+    return dataf
 
 df_analysis = make_ana_df(dici_full, dici_est)
 
@@ -80,4 +88,5 @@ df_out = make_cohort(df_analysis, cohorts)
 
 
 df_out = df_out[(df_out["age_real"]<60)&(df_out["age_real"]>29)]
+# df_out = first_year(df_out)
 df_out.to_pickle(output_week + "df_analysis_full")

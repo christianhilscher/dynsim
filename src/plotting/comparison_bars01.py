@@ -23,8 +23,9 @@ os.chdir(plot_path)
 palette = ["#c9d9d3", "#718dbf", "#e84d60", "#648450"]
 
 
-def make_plot(dataf, into_future):
+def make_plot(dataf, into_future, variable):
     dataf = dataf.copy()
+    # dataf = dataf[dataf[variable+"_real"]>0]
 
     diff_ml = np.empty(len(into_future))
     diff_standard = np.empty_like(diff_ml)
@@ -65,8 +66,8 @@ def make_plot(dataf, into_future):
 df = pd.read_pickle(output_week + "df_analysis_full")
 
 into_future = np.arange(1, len(df["period_ahead"].unique()), 4)
-variable = "gross_earnings"
+variable = "fulltime"
 
-a = make_plot(df, into_future)
+a = make_plot(df, into_future, variable)
 output_file(output_week + variable + ".html")
 show(a)
