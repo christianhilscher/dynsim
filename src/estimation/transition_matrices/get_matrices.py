@@ -76,7 +76,7 @@ def make_matrix(dataf):
 def write_matrices(dataf):
     dataf = dataf.copy()
 
-    bins = np.arange(0, 101, 5)
+    bins = np.arange(0, 101, 3)
     dataf["age_bin"] = pd.cut(dataf["age"], bins)
 
     dataf.sort_values("age", inplace=True)

@@ -306,7 +306,7 @@ def get_access(dataf):
     dataf["sex"] = "female"
     dataf.loc[dataf["female"]==0, "sex"] = "male"
 
-    bins = np.arange(0, 101, 5)
+    bins = np.arange(0, 101, 3)
     dataf["age_bin"] = pd.cut(dataf["age"], bins)
     dataf["left"] = [str(bin.left) for bin in dataf["age_bin"]]
 

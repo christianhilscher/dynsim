@@ -5,7 +5,7 @@ import os
 
 
 ###############################################################################
-current_week = "44"
+current_week = "45"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
