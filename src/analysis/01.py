@@ -5,7 +5,7 @@ import os
 
 
 ###############################################################################
-current_week = "38"
+current_week = "41"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -86,7 +86,13 @@ df_analysis = make_ana_df(dici_full, dici_est)
 cohorts = np.arange(1945, 1955)
 df_out = make_cohort(df_analysis, cohorts)
 
-
-df_out = df_out[(df_out["age_real"]<60)&(df_out["age_real"]>29)]
-# df_out = first_year(df_out)
+#df_out = df_out[(df_out["age_real"]<60)&(df_out["age_real"]>29)]
+df_out = first_year(df_out)
 df_out.to_pickle(output_week + "df_analysis_full")
+
+
+y = 25
+df_out.loc[df_out["period_ahead"]==y, "retired_real"].mean()
+df_out.loc[df_out["period_ahead"]==y, "retired_ml"].mean()
+df_out.loc[df_out["period_ahead"]==y, "retired_standard"].mean()
+df_out.loc[df_out["period_ahead"]==y, "retired_ext"].mean()

@@ -12,7 +12,7 @@ import lightgbm as lgb
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
 input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/modelsCV/"
+model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
 
 os.chdir("/Users/christianhilscher/desktop/dynsim/src/estimation/")
 
@@ -23,24 +23,40 @@ from standard import getdf, get_dependent_var
 def data_general(dataf, dep_var, estimate=1):
     dataf = dataf.copy()
 
+
     if estimate == 1:
-        dataf = get_dependent_var(dataf, dep_var)
+        dataf.rename(columns={dep_var: 'dep_var'}, inplace=True)
     else:
-        dataf = get_dependent_var(dataf, dep_var)
-        dataf.drop('dep_var', axis=1, inplace=True)
+        dataf.drop(dep_var, axis=1, inplace=True)
         dataf.drop('personweight', axis=1, inplace=True)
 
-    vars_drop = ["pid",
-                 "hid",
-                 "orighid",
-                 "age_max",
-                 "predicted",
-                 "lfs",
-                 "working",
-                 "fulltime",
-                 "lfs_t1",
-                 "working_t1",
-                 "fulltime_t1"]
+    if dep_var == "employment_status":
+        vars_drop = ["pid",
+                     "hid",
+                     "orighid",
+                     "age_max",
+                     "predicted",
+                     "hhweigth",
+                     "retired",
+                     "working",
+                     "fulltime",
+                     "hours",
+                     "gross_earnings"]
+    elif dep_var == "hours":
+        vars_drop = ["pid",
+                     "hid",
+                     "orighid",
+                     "age_max",
+                     "predicted",
+                     "hhweigth",
+                     "gross_earnings"]
+    else:
+        vars_drop = ["pid",
+                     "hid",
+                     "orighid",
+                     "age_max",
+                     "predicted",
+                     "hhweigth"]
 
     for var in vars_drop:
         if var in dataf.columns.tolist():
@@ -75,7 +91,8 @@ def _prepare_classifier(dataf):
 
     # Scaling
     X_train_scaled = StandardScaler().fit_transform(np.asarray(X_train))
-    X_test_scaled = StandardScaler().fit_transform(np.asarray(X_test))
+    X_test_scaler = StandardScaler().fit(np.asarray(X_test))
+    X_test_scaled = X_test_scaler.transform(np.asarray(X_test))
 
     # Coeffs feature_names
     feature_names = X_train.columns.tolist()
@@ -97,7 +114,8 @@ def _prepare_classifier(dataf):
                 'lgb_train': lgb_train,
                 'lgb_test': lgb_test,
                 'features': feature_names,
-                'weights': weights_train}
+                'weights': weights_train,
+                'X_scaler': X_test_scaler}
     return out_dici
 
 def _prepare_regressor(dataf, dep_var):
@@ -116,7 +134,8 @@ def _prepare_regressor(dataf, dep_var):
 
     # Scaling
     X_train_scaled = StandardScaler().fit_transform(np.asarray(X_train))
-    X_test_scaled = StandardScaler().fit_transform(np.asarray(X_test))
+    X_test_scaler = StandardScaler().fit(np.asarray(X_test))
+    X_test_scaled = X_test_scaler.transform(np.asarray(X_test))
     y_train_scaled = StandardScaler().fit_transform(np.asarray(y_train).reshape(-1,1))
 
     # Saving the scaler of the test data to convert the predicted values again
@@ -127,10 +146,6 @@ def _prepare_regressor(dataf, dep_var):
     y_test_scaled = np.ravel(y_test_scaled)
     y_train_scaled = np.ravel(y_train_scaled)
 
-    # For Standard Part:
-    X_train = sm.add_constant(X_train)
-    X_test = sm.add_constant(X_test)
-
     # For ML part:
     lgb_train = lgb.Dataset(X_train_scaled, y_train,
                             weight = weights_train)
@@ -138,11 +153,8 @@ def _prepare_regressor(dataf, dep_var):
                            weight = weights_test)
 
 
-    out_dici = {'X_train': X_train_scaled,
-                'X_test': X_test,
-                'y_train': y_train_scaled,
-                'y_test': y_test,
-                'scaler': y_test_scaler,
+    out_dici = {'y_scaler': y_test_scaler,
+                'X_scaler': X_test_scaler,
                 'lgb_train': lgb_train,
                 'lgb_test': lgb_test,
                 'features': feature_names,
@@ -170,6 +182,8 @@ def _estimate(dataf, dep_var, type):
                   'bagging_freq': [5],
                   'verbose' : 5,
                   'early_stopping_rounds': 5}
+        pickle.dump(dict['y_scaler'],
+                    open(model_path + dep_var + "_y_scaler_multi", 'wb'))
     elif type == 'binary':
             dict = _prepare_classifier(dataf)
             params = {'task' : 'train',
@@ -202,6 +216,10 @@ def _estimate(dataf, dep_var, type):
                      feature_name = dict['features'])
 
     modl.save_model(model_path + dep_var + "_extended.txt")
+
+    pickle.dump(dict['X_scaler'],
+                open(model_path + dep_var + "_X_scaler_multi", 'wb'))
+
 
 
 

@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 ##############################################################################
 ##############################################################################
 input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/modelsCV/"
+model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
 sim_path = "/Users/christianhilscher/desktop/dynsim/src/sim/"
 
@@ -21,13 +21,18 @@ os.chdir(sim_path)
 ##############################################################################
 
 # Functions used for predicting values
-def scale_data(dataf, dep_var=None):
+def scale_data(dataf, dep_var=None, multi=0):
     dataf = dataf.copy()
-    X = StandardScaler().fit_transform(np.asarray(dataf))
+    if multi == 1:
+
+        scaler = pd.read_pickle(model_path + dep_var + "_X_scaler_multi")
+    else:
+        scaler = pd.read_pickle(model_path + dep_var + "_X_scaler")
+    X = scaler.transform(np.asarray(dataf))
     return X
 
 def _logit(X, variable):
-    X= X.copy()
+    X = X.copy()
 
     X_scaled = scale_data(X, variable)
     #X_scaled['const'] = 1
@@ -50,7 +55,7 @@ def _ols(X, variable):
     estimator  = pd.read_pickle(model_path + variable + "_ols")
     pred = estimator.predict(X_scaled)
 
-    scaler = pd.read_pickle(model_path + variable + "_scaler")
+    scaler = pd.read_pickle(model_path + variable + "_y_scaler")
     pred_scaled = scaler.inverse_transform(pred)
     pred_scaled[pred_scaled<0] = 0
 
@@ -59,14 +64,14 @@ def _ols(X, variable):
 def _ml(X, variable):
     X = X.copy()
 
-    X_scaled = scale_data(X)
+    X_scaled = scale_data(X, variable)
     estimator = lgb.Booster(model_file = model_path + variable + '_ml.txt')
     pred = estimator.predict(X_scaled)
 
     if variable in ['hours', 'gross_earnings']:
         # pred_scaled = pred
         # Inverse transform regression results
-        scaler = pd.read_pickle(model_path + variable + "_scaler")
+        scaler = pd.read_pickle(model_path + variable + "_y_scaler")
         pred_scaled = scaler.inverse_transform(pred)
     else:
         # Make binary prediction to straight 0 and 1
@@ -78,18 +83,15 @@ def _ml(X, variable):
 
 def _ext(X, variable):
     X = X.copy()
-
-    X_scaled = scale_data(X, variable)
+    X.reset_index(drop=True, inplace=True)
+    X_scaled = scale_data(X, variable, multi=1)
     estimator = lgb.Booster(model_file = model_path + \
                             variable + '_extended.txt')
     pred = estimator.predict(X_scaled)
 
     if variable == "employment_status":
-        # Inverse transform regression results
-        predictions = np.empty(len(pred))
-
-        for (i, x) in enumerate(pred):
-            predictions[i] = np.argmax(x)
+        weighted_res = get_results(X, pred, 0)
+        predictions = draw_status(weighted_res)
 
     else:
         predictions = pred
@@ -108,13 +110,13 @@ def make_hh_vars(dataf):
     dataf = _hh_age_youngest(dataf)
     dataf = _hh_children(dataf)
     dataf = _hh_size(dataf)
-    #dataf = _hh_fraction_working(dataf)
+    dataf = _hh_fraction_working(dataf)
     dataf.reset_index(inplace=True)
     return dataf
 
 def _hh_income(dataf):
     dataf = dataf.copy()
-    earnings = dataf.groupby('hid')['gross_earnings'].sum()
+    earnings = dataf.groupby('hid')['gross_earnings_t1'].sum()
     dataf['hh_income'] = earnings
     return dataf
 
@@ -136,7 +138,7 @@ def _hh_fraction_working(dataf):
     dataf = _hh_size(dataf)
     dataf = _hh_children(dataf)
 
-    total = dataf.groupby('hid')['working'].sum()
+    total = dataf.groupby('hid')['working_t1'].sum()
     dataf['total_working'] = total
 
     dataf['n_adults'] = dataf['n_people'] - dataf['n_children']
@@ -144,6 +146,12 @@ def _hh_fraction_working(dataf):
         raise ValueError('No adult in HH')
     else:
         dataf['hh_frac_working'] = dataf['total_working']/dataf['n_adults']
+
+    # Children could also be working, but bound it at 1
+    dataf.loc[dataf["hh_frac_working"]>1, "hh_frac_working"] = 1
+
+    # NaN cannot occur
+    dataf.loc[dataf["hh_frac_working"].isna(), "hh_frac_working"] = 0
 
     dataf.drop(['total_working', 'n_adults'], axis=1, inplace=True)
     return dataf
@@ -287,3 +295,99 @@ def to_binary(dataf):
     dataf.loc[vollzeit, "retired"] = 0
 
     return dataf
+
+# Functions for transition matrices
+def read_transition_data():
+    trans_matrices = pd.read_pickle(estimation_path + "transition_matrices/full_sample")
+    return trans_matrices
+
+def get_access(dataf):
+
+    dataf["sex"] = "female"
+    dataf.loc[dataf["female"]==0, "sex"] = "male"
+
+    bins = np.arange(0, 101, 5)
+    dataf["age_bin"] = pd.cut(dataf["age"], bins)
+    dataf["left"] = [str(bin.left) for bin in dataf["age_bin"]]
+
+    dataf["name"] = list(zip(dataf["sex"], dataf["left"]))
+    dataf["name"] = dataf["name"].apply(get_name)
+
+    dataf.drop("sex", axis=1, inplace=True)
+    dataf.drop("age_bin", axis=1, inplace=True)
+    dataf.drop("left", axis=1, inplace=True)
+
+    return dataf
+
+def get_name(itr):
+    seq = (itr[0], itr[1])
+    sep = "_"
+    return sep.join(seq)
+
+def get_cond_prob(age_interval, employment_status, dici):
+    probs = dici[age_interval].iloc[int(employment_status),0:4]
+    marg_prob = dici[age_interval].iloc[int(employment_status),-1]
+
+    if marg_prob != 0:
+        out = probs/marg_prob
+    else:
+        out = np.zeros(4)
+    return out
+
+def weighting(prediction, transition, share_prediction):
+    weighted = np.empty_like(prediction)
+    out = np.empty(len(prediction))
+
+    weighted = share_prediction * prediction + (1-share_prediction) * transition
+    return weighted
+
+def get_results(dataf, predictions, share):
+    dataf = dataf.copy()
+
+    transition_matrices = read_transition_data()
+
+    # Adapt dataframe to compare probabilities
+    dataf = get_access(dataf)
+    dataf.reset_index(drop=True, inplace=True)
+
+    assert(
+        dataf.isnull().sum().sum() == 0
+    ), ValueError("You have missings up here")
+
+    own_prob = np.zeros_like(predictions)
+    i = 0
+    for (name, empl) in zip(dataf["name"], dataf["employment_status_t1"]):
+        own_prob[i] = get_cond_prob(name,
+                                    empl,
+                                    transition_matrices)
+        i += 1
+    assert(
+        sum(sum(np.isnan(own_prob))) == 0
+    ), ValueError("You have missings up here")
+    # Do the weighting
+    out = weighting(predictions, own_prob, share)
+    return out
+
+def draw_status(weighted_results):
+
+    # Adding zero for intervals later
+    withzeros = np.zeros((weighted_results.shape[0],
+                          weighted_results.shape[1] + 1))
+
+    withzeros[:, 1:] = weighted_results
+
+    # cumulate and make intervals
+    cumulated = [withzeros[i,:].cumsum() for i in np.arange(len(withzeros))]
+    intervs = [pd.arrays.IntervalArray.from_breaks(i) for i in cumulated]
+
+    # random draw
+    draw = np.random.uniform(size=withzeros.shape[0])
+
+    # depending on rnaomd draw assign status
+    status = np.empty(len(draw))
+    for stat in np.arange(4):
+
+        cond = [draw[i] in intervs[i][stat] for i in np.arange(len(draw))]
+        status[cond] = stat
+
+    return status

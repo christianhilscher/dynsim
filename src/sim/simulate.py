@@ -18,6 +18,10 @@ from work_module import sim_retired, sim_working, sim_fulltime, sim_hours, sim_e
 
 os.chdir(cwd)
 ##############################################################################
+def quick_analysis(dataf):
+    print("Null Values:")
+    print(dataf.apply(lambda x: sum(x.isnull()) / len(dataf)))
+
 def make_cohort(dataf):
     dataf = dataf.copy()
     birthyear = dataf['year'] - dataf['age']
@@ -81,9 +85,11 @@ def update(dataf):
                       'working',
                       'fulltime',
                       'hours',
-                      'gross_earnings']
+                      'gross_earnings',
+                      'employment_status']
 
     dataf[estimated_vars] = 0
+    dataf = _moving(dataf)
     return dataf
 
 def run_family_module(dataf, type):

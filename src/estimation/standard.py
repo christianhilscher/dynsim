@@ -77,7 +77,8 @@ def _prepare_classifier(dataf):
 
     # Scaling
     X_train_scaled = StandardScaler().fit_transform(np.asarray(X_train))
-    X_test_scaled = StandardScaler().fit_transform(np.asarray(X_test))
+    X_test_scaler = StandardScaler().fit(np.asarray(X_test))
+    X_test_scaled = X_test_scaler.transform(np.asarray(X_test))
 
     # Coeffs feature_names
     feature_names = X_train.columns.tolist()
@@ -94,6 +95,7 @@ def _prepare_classifier(dataf):
 
     out_dici = {'X_train': X_train_scaled,
                 'X_test': X_test_scaled,
+                'X_scaler': X_test_scaler,
                 'y_train': y_train,
                 'y_test': y_test,
                 'lgb_train': lgb_train,
@@ -118,7 +120,8 @@ def _prepare_regressor(dataf):
 
     # Scaling
     X_train_scaled = StandardScaler().fit_transform(np.asarray(X_train))
-    X_test_scaled = StandardScaler().fit_transform(np.asarray(X_test))
+    X_test_scaler = StandardScaler().fit(np.asarray(X_test))
+    X_test_scaled = X_test_scaler.transform(np.asarray(X_test))
     y_train_scaled = StandardScaler().fit_transform(np.asarray(y_train).reshape(-1,1))
 
     # Saving the scaler of the test data to convert the predicted values again
@@ -142,9 +145,10 @@ def _prepare_regressor(dataf):
 
     out_dici = {'X_train': X_train_scaled,
                 'X_test': X_test,
+                'X_scaler': X_test_scaler,
                 'y_train': y_train_scaled,
                 'y_test': y_test,
-                'scaler': y_test_scaler,
+                'y_scaler': y_test_scaler,
                 'lgb_train': lgb_train,
                 'lgb_test': lgb_test,
                 'features': feature_names,
@@ -242,6 +246,8 @@ def estimate_birth(dataf):
     pickle.dump(logit,
                 open(model_path + "birth_logit", 'wb'))
     ml.save_model(model_path + "birth_ml.txt")
+    pickle.dump(dict['X_scaler'],
+                open(model_path + "birth_X_scaler", 'wb'))
 
 
 def data_retired(dataf, estimate=1):
@@ -250,23 +256,14 @@ def data_retired(dataf, estimate=1):
     if estimate == 1:
         dataf= get_dependent_var(dataf, 'retired')
         vars_retain = ['dep_var',
-                       'retired_t1',
-                       'working_t1',
-                       'n_children',
-                       'hh_youngest_age',
-                       'hh_income',
-                       'hh_frac_working',
-                       'female',
                        'age',
+                       'female',
+                       'retired_t1',
                        'personweight']
     elif estimate == 0:
-        vars_retain = ['retired_t1',
-                       'working_t1',
-                       'n_children',
-                       'hh_youngest_age',
-                       'hh_income', 'hh_frac_working',
+        vars_retain = ['age',
                        'female',
-                       'age']
+                       'retired_t1']
     else:
         raise ValueError("0 is for simulation, 1 for estimation")
 
@@ -306,6 +303,8 @@ def estimate_retired(dataf):
     pickle.dump(logit,
                 open(model_path + "retired_logit", 'wb'))
     ml.save_model(model_path + "retired_ml.txt")
+    pickle.dump(dict['X_scaler'],
+                open(model_path + "retired_X_scaler", 'wb'))
 
 def data_working(dataf, estimate=1):
     dataf = dataf.copy()
@@ -329,7 +328,8 @@ def data_working(dataf, estimate=1):
                        'working_t1',
                        'n_children',
                        'hh_youngest_age',
-                       'hh_income', 'hh_frac_working',
+                       'hh_income',
+                       'hh_frac_working',
                        'female',
                        'age']
     else:
@@ -371,6 +371,8 @@ def estimate_working(dataf):
     pickle.dump(logit,
                 open(model_path + "working_logit", 'wb'))
     ml.save_model(model_path + "working_ml.txt")
+    pickle.dump(dict['X_scaler'],
+                open(model_path + "working_X_scaler", 'wb'))
 
 def data_fulltime(dataf, estimate=1):
     dataf = dataf.copy()
@@ -436,6 +438,8 @@ def estimate_fulltime(dataf):
     pickle.dump(logit,
                 open(model_path + "fulltime_logit", 'wb'))
     ml.save_model(model_path + "fulltime_ml.txt")
+    pickle.dump(dict['X_scaler'],
+                open(model_path + "fulltime_X_scaler", 'wb'))
 
 def data_hours(dataf, estimate=1):
     dataf = dataf.copy()
@@ -508,8 +512,10 @@ def estimate_hours(dataf):
     pickle.dump(ols,
                 open(model_path + "hours_ols", 'wb'))
     ml.save_model(model_path + "hours_ml.txt")
-    pickle.dump(dict['scaler'],
-                open(model_path + "hours_scaler", 'wb'))
+    pickle.dump(dict['y_scaler'],
+                open(model_path + "hours_y_scaler", 'wb'))
+    pickle.dump(dict['X_scaler'],
+                open(model_path + "hours_X_scaler", 'wb'))
 
 def data_earnings(dataf, estimate=1):
     dataf = dataf.copy()
@@ -581,8 +587,10 @@ def estimate_earnings(dataf):
     pickle.dump(ols,
                 open(model_path + "gross_earnings_ols", 'wb'))
     ml.save_model(model_path + "gross_earnings_ml.txt")
-    pickle.dump(dict['scaler'],
-                open(model_path + "gross_earnings_scaler", 'wb'))
+    pickle.dump(dict['y_scaler'],
+                open(model_path + "gross_earnings_y_scaler", 'wb'))
+    pickle.dump(dict['X_scaler'],
+                open(model_path + "gross_earnings_X_scaler", 'wb'))
 
 
 # df = pd.read_pickle(input_path + 'merged').dropna()

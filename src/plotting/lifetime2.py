@@ -30,7 +30,7 @@ output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
 sim_path = "/Users/christianhilscher/desktop/dynsim/src/sim/"
 
-current_week = "38"
+current_week = "44"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 
 def make_cohort(dataf, birthyears):
@@ -46,20 +46,14 @@ def make_cohort(dataf, birthyears):
 
 dataf = pd.read_pickle(input_path + "merged")
 dataf1 = pd.read_pickle(output_week + "df_analysis_full")
-dataf2 = pd.read_pickle(output_week + "df_analysis_workingage")
+# dataf2 = pd.read_pickle(output_week + "df_analysis_workingage")
 
 palette = ["#c9d9d3", "#718dbf", "#e84d60", "#648450"]
-
-
 
 cohorts = np.arange(1945, 1955)
 df = make_cohort(dataf1, cohorts)
 
-df = df[df["female_real"]==1]
-#df = dataf[(dataf["female"]==1)&(dataf["east"]==1)]
-ts = []
-ts = ["standard", "ml", "real"]
-for type in ts:
+def plot_lifetime(df, type):
     print(type)
     ylist = []
     list0 = []
@@ -95,7 +89,7 @@ for type in ts:
     labels = ["Vollzeit", "Teilzeit", "N.E.", "Rente"]
 
 
-    p = figure(x_range=ylist, plot_height=250, plot_width=1500, title="Employment Status by age: West Germany, Females / type: " + type)
+    p = figure(x_range=ylist, plot_height=250, plot_width=1500, title="Employment Status by age: West Germany / type: " + type)
 
     p.vbar_stack(alllist, x='age', width=0.9, color=palette, source=dici,
                  legend_label=labels)
@@ -110,4 +104,4 @@ for type in ts:
 
     show(p)
 
-len(dataf1["pid"].unique())
+plot_lifetime(dataf1, "ext")

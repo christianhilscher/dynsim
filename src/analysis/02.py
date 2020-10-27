@@ -5,15 +5,15 @@ import os
 
 
 ###############################################################################
-current_week = "29"
+current_week = "44"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
 input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
 output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 
-dici_full = pd.read_pickle(output_path + "filled_dici_illmitz_est_reduced.pkl")
-dici_est = pd.read_pickle(output_path + "filled_dici_illmitz_est_reduced2.pkl")
+dici_full = pd.read_pickle(output_path + "doc_full.pkl")
+dici_est = pd.read_pickle(output_path + "doc_full2.pkl")
 
 
 df_full_ml = dici_full["ml"]
@@ -24,52 +24,56 @@ df_est_ml = dici_est["ml"]
 df_est_standard = dici_est["standard"]
 df_est_ext = dici_est["ext"]
 
+def make_ana_df(real_dici, predicted_dici):
+    df_real = real_dici["ml"]
+    df_predicted_ml = predicted_dici["ml"]
+    df_predicted_standard = predicted_dici["standard"]
+    df_predicted_ext = predicted_dici["ext"]
 
+    relevant = df_real[df_real["predicted"]==0]
 
+    together = pd.merge(relevant, df_predicted_ml,
+                        on=["pid", "year"], suffixes=["_real", "_ml"])
+    together = pd.merge(together, df_predicted_standard,
+                        on=["pid", "year"], suffixes=["", "_standard"])
+    together = pd.merge(together, df_predicted_ext,
+                        on=["pid", "year"], suffixes=["", "_ext"])
 
-real_dici = dici_full
-predicted_dici = dici_est
+    together["period_ahead"] = np.nan
+    together["max_period"] = np.nan
+    together["max_period"] = together.groupby("pid")["year"].transform("last")
+    together["period_ahead"] = together["max_period"] - together["year"]
+    together.drop("max_period", axis=1, inplace=True)
 
-df_real = real_dici["ml"]
-df_predicted_ml = predicted_dici["ml"]
-df_predicted_standard = predicted_dici["standard"]
-df_predicted_ext = predicted_dici["ext"]
+    return together
 
-relevant = df_real[df_real["predicted"]==0]
-together = pd.merge(relevant, df_predicted_ml, on=["pid", "year"], suffixes=["_real", "_ml"])
-together = pd.merge(together, df_predicted_standard, on=["pid", "year"], suffixes=["", "_standard"])
-together = pd.merge(together, df_predicted_ext, on=["pid", "year"], suffixes=["", "_ext"])
-together.columns.tolist()
+def make_cohort(dataf, birthyears):
+    dataf = dataf.copy()
 
+    birthyear = dataf["year"] - dataf["age"]
+    condition = [by in birthyears for by in birthyear]
+    dataf = dataf.loc[condition]
+    dataf = dataf[dataf["east"]==0]
 
-together.sort_values(by=["pid", "year"])
-together["period_ahead"] = 0
+    dataf_renamed = dataf.iloc[:,76:113].add_suffix("_standard")
+    dataf = pd.concat([dataf.iloc[:,:76], dataf_renamed, dataf.iloc[:,113:]], axis=1)
 
-out = pd.DataFrame()
-tmp = together
-j=0
+    return dataf
 
-together.columns.tolist()
-cond = tmp["pid"].duplicated(keep="first")
-not_dups = tmp[~cond]
-dups = tmp[cond]
+def first_year(dataf):
+    a = (dataf.groupby("pid")["year"].min()).to_frame()
+    a.reset_index(inplace=True)
+    b = a.loc[a["year"]==min(a["year"]), "pid"].tolist()
 
+    c = [pid in b for pid in dataf["pid"]]
+    dataf = dataf[c]
+    return dataf
 
+df_analysis = make_ana_df(dici_full, dici_est)
 
+cohorts = np.arange(1945, 1955)
+df_out = make_cohort(df_analysis, cohorts)
 
-
-
-
-while len(tmp)>0:
-    j+=1
-    cond = tmp["pid"].duplicated(keep="first")
-    not_dups = tmp[~cond]
-    dups = tmp[cond]
-
-    out = pd.concat([out, not_dups])
-    dups["period_ahead"] += 1
-    print("Done with period", j)
-    tmp = dups.sort_values(by=["pid", "year"])
-
-out.columns.tolist()
-out.to_pickle(output_week + "df_analysis")
+#df_out = df_out[(df_out["age_real"]<60)&(df_out["age_real"]>29)]
+#df_out = first_year(df_out)
+df_out.to_pickle(output_week + "df_analysis_full")

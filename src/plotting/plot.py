@@ -23,7 +23,7 @@ dataf = pd.read_pickle(output_path + "filled_dici_illmitz_est_reduced.pkl")
 
 ###############################################################################
 # Comparing variable means
-var_list = [working', 'fulltime', 'hours', 'gross_earnings', 'birth', 'married']
+var_list = ['working', 'fulltime', 'hours', 'gross_earnings', 'birth', 'married']
 
 variable_means(dataf, var_list, output_week)
 

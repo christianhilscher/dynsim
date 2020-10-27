@@ -182,6 +182,9 @@ def _hh_fraction_working(dataf):
     dataf['hh_frac_working'] = dataf['total_working']/dataf['n_adults']
     dataf.loc[dataf['n_adults']==0, 'hh_frac_working'] = 0
 
+    # Children could also be working, but bound it at 1
+    dataf.loc[dataf["hh_frac_working"]>1, "hh_frac_working"] = 1
+
     dataf.drop(['total_working', 'n_adults'], axis=1, inplace=True)
     return dataf
 
