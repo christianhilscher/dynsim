@@ -4,20 +4,16 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-selenium = "*"
 
 [packages]
 numpy = "*"
 pandas = "*"
-selenium = "*"
 bokeh = "*"
 sklearn = "*"
 matplotlib = "*"
-setuptools = "*"
-wheel = "*"
-scipy = "*"
 scikit-learn = "*"
 jupyter = "*"
+requests = "*"
 
 [requires]
 python_version = "3.8"

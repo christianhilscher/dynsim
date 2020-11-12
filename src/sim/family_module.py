@@ -29,7 +29,7 @@ def death(dataf):
     dataf = dataf.copy()
 
     dataf['deaths'] = 0
-    dataf.loc[dataf['age']>dataf['age_max'], 'deaths'] = 1
+    dataf.loc[dataf['age']>=dataf['age_max'], 'deaths'] = 1
     if np.sum(dataf['deaths'])>0:
         death_count = np.sum(dataf['deaths'])
         dataf = dataf.loc[dataf['deaths']==0,:]

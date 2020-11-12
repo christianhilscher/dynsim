@@ -90,8 +90,10 @@ def _ext(X, variable):
     pred = estimator.predict(X_scaled)
 
     if variable == "employment_status":
+        # last argument is how to weigh prediction vs transition matrix
+        # 1 is full weight on prediction, 0 is full weight on transition matrix
         weighted_res = get_results(X, pred, 0)
-        predictions = draw_status(weighted_res)
+        predictions = draw_status_strict(weighted_res)
 
     else:
         predictions = pred
@@ -306,9 +308,10 @@ def get_access(dataf):
     dataf["sex"] = "female"
     dataf.loc[dataf["female"]==0, "sex"] = "male"
 
-    bins = np.arange(0, 101, 3)
+    bins = np.arange(0, 101, 1)
     dataf["age_bin"] = pd.cut(dataf["age"], bins)
     dataf["left"] = [str(bin.left) for bin in dataf["age_bin"]]
+    dataf["left"] = dataf["left"]
 
     dataf["name"] = list(zip(dataf["sex"], dataf["left"]))
     dataf["name"] = dataf["name"].apply(get_name)
@@ -350,10 +353,6 @@ def get_results(dataf, predictions, share):
     dataf = get_access(dataf)
     dataf.reset_index(drop=True, inplace=True)
 
-    assert(
-        dataf.isnull().sum().sum() == 0
-    ), ValueError("You have missings up here")
-
     own_prob = np.zeros_like(predictions)
     i = 0
     for (name, empl) in zip(dataf["name"], dataf["employment_status_t1"]):
@@ -361,9 +360,7 @@ def get_results(dataf, predictions, share):
                                     empl,
                                     transition_matrices)
         i += 1
-    assert(
-        sum(sum(np.isnan(own_prob))) == 0
-    ), ValueError("You have missings up here")
+
     # Do the weighting
     out = weighting(predictions, own_prob, share)
     return out
@@ -383,7 +380,7 @@ def draw_status(weighted_results):
     # random draw
     draw = np.random.uniform(size=withzeros.shape[0])
 
-    # depending on rnaomd draw assign status
+    # depending on random draw assign status
     status = np.empty(len(draw))
     for stat in np.arange(4):
 
@@ -391,3 +388,8 @@ def draw_status(weighted_results):
         status[cond] = stat
 
     return status
+
+def draw_status_strict(weighted_results):
+    draws = np.empty(len(weighted_results))
+    draws = [np.argmax(weighted_results[i,:]) for i in np.arange(len(weighted_results))]
+    return np.array(draws)

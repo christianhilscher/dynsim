@@ -7,24 +7,30 @@ import statsmodels.api as sm
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
-
 import lightgbm as lgb
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
 input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
 model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
+###############################################################################
 
+# Getting dataframe into right shape
 def getdf(dataf):
     dataf = dataf.copy()
 
+    # Only keeping those with more than two consective years
     condition = dataf.groupby('pid')['year'].count()>2
     dataf = dataf.set_index('pid')[condition]
     year_list = dataf['year'].unique()
 
+    # Making space
     dataf['hours_t1'] = np.NaN
     dataf['gross_earnings_t1'] = np.NaN
 
+    # Final dataframe for output
     dataf_out = pd.DataFrame()
+
+    # For each year use the previous year's values to fill up t-1 and t-2 columns
     for i in np.sort(year_list)[2:]:
         df_now = dataf[dataf['year'] == i].copy()
         df_yesterday = dataf[dataf['year'] == (i-1)].copy()
@@ -46,6 +52,7 @@ def getdf(dataf):
     dataf_out.dropna(inplace=True)
     return dataf_out
 
+
 def get_dependent_var(dataf, dep_var):
     dataf = dataf.copy()
 
@@ -64,11 +71,10 @@ def _prepare_classifier(dataf):
     weights_train = X_train['personweight']
     X_train.drop('personweight', axis=1, inplace=True)
 
-
     weights_test = X_test['personweight']
     X_test.drop('personweight', axis=1, inplace=True)
 
-
+    # When having weights and interaction effects, drop interaction w/ weights
     if "personweight_interacted" in X.columns.tolist():
         X_train.drop('personweight_interacted', axis=1, inplace=True)
         X_test.drop('personweight_interacted', axis=1, inplace=True)
@@ -93,6 +99,7 @@ def _prepare_classifier(dataf):
     lgb_test = lgb.Dataset(X_test_scaled, y_test,
                            weight = weights_test)
 
+    # Return dictionary with needed values
     out_dici = {'X_train': X_train_scaled,
                 'X_test': X_test_scaled,
                 'X_scaler': X_test_scaler,
@@ -155,6 +162,7 @@ def _prepare_regressor(dataf):
                 'weights': weights_train}
     return out_dici
 
+# Interaction effects for standard part
 def _interact(dataf, estimate):
     dataf = dataf.copy()
 
@@ -593,12 +601,14 @@ def estimate_earnings(dataf):
                 open(model_path + "gross_earnings_X_scaler", 'wb'))
 
 
-# df = pd.read_pickle(input_path + 'merged').dropna()
-# df1 = getdf(df)
-#
-# estimate_retired(df1)
-# estimate_working(df1)
-# estimate_fulltime(df1)
-# estimate_hours(df1)
-# estimate_earnings(df1)
-# estimate_birth(df1)
+###############################################################################
+if __name__ == "__main__":
+    df = pd.read_pickle(input_path + 'merged').dropna()
+    df1 = getdf(df)
+
+    estimate_retired(df1)
+    estimate_working(df1)
+    estimate_fulltime(df1)
+    estimate_hours(df1)
+    estimate_earnings(df1)
+    estimate_birth(df1)

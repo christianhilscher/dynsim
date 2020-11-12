@@ -223,10 +223,11 @@ def _estimate(dataf, dep_var, type):
 
 
 
+###############################################################################
+if __name__ == "__main__":
+    df = pd.read_pickle(input_path + 'merged').dropna()
+    df1 = getdf(df)
 
-# df = pd.read_pickle(input_path + 'merged').dropna()
-# df1 = getdf(df)
-#
-# _estimate(df1, "employment_status", "multiclass")
-# _estimate(df1, "hours", "regression")
-# _estimate(df1, "gross_earnings", "regression")
+    _estimate(df1, "employment_status", "multiclass")
+    _estimate(df1, "hours", "regression")
+    _estimate(df1, "gross_earnings", "regression")

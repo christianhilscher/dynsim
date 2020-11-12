@@ -4,11 +4,6 @@ import os
 import pathlib
 import pickle
 
-import statsmodels.api as sm
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set(style="darkgrid")
-
 cwd = os.getcwd()
 sim_path = "/Users/christianhilscher/Desktop/dynsim/src/sim/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
@@ -29,7 +24,9 @@ os.chdir(cwd)
 
 df = pd.read_pickle(input_path + 'merged').dropna()
 df1 = getdf(df)
-df2 = df1.drop_duplicates(subset="pid")
+
+df1.sort_values(["pid", "year"], inplace=True)
+df2 = df1.drop_duplicates(subset="pid", keep="first")
 
 
 abc = fill_dataf(df1)

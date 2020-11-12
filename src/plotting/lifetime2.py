@@ -3,10 +3,6 @@ import pandas as pd
 import pickle
 import os
 
-import lightgbm as lgb
-import statsmodels.api as sm
-from sklearn.preprocessing import StandardScaler
-
 from bokeh.layouts import row
 from bokeh.plotting import figure, output_file, show, gridplot
 from bokeh.models import ColumnDataSource, FactorRange
@@ -30,7 +26,7 @@ output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
 sim_path = "/Users/christianhilscher/desktop/dynsim/src/sim/"
 
-current_week = "44"
+current_week = "46"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 
 def make_cohort(dataf, birthyears):
@@ -104,4 +100,7 @@ def plot_lifetime(df, type):
 
     show(p)
 
-plot_lifetime(dataf1, "ext")
+if __name__ == "__main__":
+    plot_lifetime(dataf1, "real")
+    plot_lifetime(dataf1, "ml")
+    plot_lifetime(dataf1, "ext")

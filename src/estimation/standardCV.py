@@ -611,12 +611,14 @@ def estimate_earnings(dataf):
                 open(model_path + "gross_earnings_scaler", 'wb'))
 
 
-# df = pd.read_pickle(input_path + 'workingage').dropna()
-# df1 = getdf(df)
-#
-# estimate_retired(df1)
-# estimate_working(df1)
-# estimate_fulltime(df1)
-# estimate_hours(df1)
-# estimate_earnings(df1)
-# estimate_birth(df1)
+###############################################################################
+if __name__ == "__main__":
+    df = pd.read_pickle(input_path + 'workingage').dropna()
+    df1 = getdf(df)
+
+    estimate_retired(df1)
+    estimate_working(df1)
+    estimate_fulltime(df1)
+    estimate_hours(df1)
+    estimate_earnings(df1)
+    estimate_birth(df1)
