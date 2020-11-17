@@ -98,7 +98,7 @@ def run_rightshape(current_week):
 ###############################################################################
 if __name__ == "__main__":
     # Specifying week for folder selection
-    current_week = "46"
+    current_week = "47"
     output_week = output_path + "week" + current_week + "/"
     pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 

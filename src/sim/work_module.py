@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import os
+import random
 
 import lightgbm as lgb
 import statsmodels.api as sm
@@ -17,6 +18,8 @@ os.chdir(estimation_path)
 from standard import getdf, data_retired, data_working, data_fulltime, data_hours, data_earnings
 from multic import data_general
 os.chdir(sim_path)
+
+np.random.seed(2020)
 ##############################################################################
 ##############################################################################
 
@@ -93,7 +96,7 @@ def _ext(X, variable):
         # last argument is how to weigh prediction vs transition matrix
         # 1 is full weight on prediction, 0 is full weight on transition matrix
         weighted_res = get_results(X, pred, 0)
-        predictions = draw_status_strict(weighted_res)
+        predictions = draw_status(weighted_res)
 
     else:
         predictions = pred
@@ -310,7 +313,7 @@ def get_access(dataf):
 
     bins = np.arange(0, 101, 1)
     dataf["age_bin"] = pd.cut(dataf["age"], bins)
-    dataf["left"] = [str(bin.left) for bin in dataf["age_bin"]]
+    dataf["left"] = [str(bin.right) for bin in dataf["age_bin"]]
     dataf["left"] = dataf["left"]
 
     dataf["name"] = list(zip(dataf["sex"], dataf["left"]))
@@ -328,8 +331,8 @@ def get_name(itr):
     return sep.join(seq)
 
 def get_cond_prob(age_interval, employment_status, dici):
-    probs = dici[age_interval].iloc[int(employment_status),0:4]
-    marg_prob = dici[age_interval].iloc[int(employment_status),-1]
+    probs = dici[age_interval].iloc[0:4, int(employment_status)]
+    marg_prob = dici[age_interval].iloc[-1, int(employment_status)]
 
     if marg_prob != 0:
         out = probs/marg_prob
@@ -366,6 +369,7 @@ def get_results(dataf, predictions, share):
     return out
 
 def draw_status(weighted_results):
+    np.random.seed(2020)
 
     # Adding zero for intervals later
     withzeros = np.zeros((weighted_results.shape[0],

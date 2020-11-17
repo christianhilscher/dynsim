@@ -52,7 +52,7 @@ def transition_probability(dataf, value_t, value_t1):
 
 def marginal_probability(dataf, value_t, t=True):
 
-    if t==True:
+    if t:
         return (sum((dataf["employment_status"]==value_t))/len(dataf))
     else:
         return (sum((dataf["employment_status_t1"]==value_t))/len(dataf))
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     trans_matrices_cohort = write_matrices(df_cohort)
 
     # Dump the in same folder to overwrite values
-    trans_matrices.update(trans_matrices_cohort)
+    # trans_matrices.update(trans_matrices_cohort)
 
     # Saving final dictionary
     os.chdir(estimation_path)

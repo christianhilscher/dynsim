@@ -26,7 +26,7 @@ output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
 sim_path = "/Users/christianhilscher/desktop/dynsim/src/sim/"
 
-current_week = "46"
+current_week = "47"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 
 def make_cohort(dataf, birthyears):
