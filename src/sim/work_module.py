@@ -95,7 +95,7 @@ def _ext(X, variable):
     if variable == "employment_status":
         # last argument is how to weigh prediction vs transition matrix
         # 1 is full weight on prediction, 0 is full weight on transition matrix
-        weighted_res = get_results(X, pred, 0)
+        weighted_res = get_results(X, pred, 0.5)
         predictions = draw_status(weighted_res)
 
     else:
