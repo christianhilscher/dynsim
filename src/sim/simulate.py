@@ -1,11 +1,11 @@
+from pathlib import Path
 import numpy as np
 import pandas as pd
-import os
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set(style="darkgrid")
 
+from sim.family_module import separations, marriage, dating_market, birth, death
+from sim.work_module import sim_retired, sim_working, sim_fulltime, sim_hours, sim_earnings, scale_data, make_hh_vars, sim_multi_employment, to_binary, to_category
+"""
 sim_path = "/Users/christianhilscher/Desktop/dynsim/src/sim/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
 input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
@@ -17,6 +17,7 @@ from family_module import separations, marriage, dating_market, birth, death
 from work_module import sim_retired, sim_working, sim_fulltime, sim_hours, sim_earnings, scale_data, make_hh_vars, sim_multi_employment, to_binary, to_category
 
 os.chdir(cwd)
+"""
 ##############################################################################
 def quick_analysis(dataf):
     print("Null Values:")

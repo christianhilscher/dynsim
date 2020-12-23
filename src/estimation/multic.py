@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import pickle
@@ -7,16 +7,15 @@ import statsmodels.api as sm
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
-
 import lightgbm as lgb
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
-input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
+from estimation.standard import getdf, get_dependent_var
 
-os.chdir("/Users/christianhilscher/desktop/dynsim/src/estimation/")
-
-from standard import getdf, get_dependent_var
+###############################################################################
+dir = Path(__file__).parents[2]
+input_path = dir / "input"
+model_path = dir / "src/estimation/models/"
 ###############################################################################
 
 
@@ -160,7 +159,7 @@ def _prepare_regressor(dataf, dep_var):
                 'features': feature_names,
                 'weights': weights_train}
     pickle.dump(y_test_scaler,
-                open(model_path + dep_var + "_scaler_ext", 'wb'))
+                open(model_path / str(dep_var + "_scaler_ext"), 'wb'))
     return out_dici
 
 def _estimate(dataf, dep_var, type):
@@ -183,7 +182,7 @@ def _estimate(dataf, dep_var, type):
                   'verbose' : 5,
                   'early_stopping_rounds': 5}
         pickle.dump(dict['y_scaler'],
-                    open(model_path + dep_var + "_y_scaler_multi", 'wb'))
+                    open(model_path / str(dep_var + "_y_scaler_multi"), 'wb'))
     elif type == 'binary':
             dict = _prepare_classifier(dataf)
             params = {'task' : 'train',
@@ -215,17 +214,19 @@ def _estimate(dataf, dep_var, type):
                      valid_sets = dict['lgb_test'],
                      feature_name = dict['features'])
 
-    modl.save_model(model_path + dep_var + "_extended.txt")
+    # Make directory if it doesn't exist yet
+    Path(model_path / dep_var).mkdir(parents=True, exist_ok=True)
+    modl.save_model(str(model_path / dep_var / "_extended.txt"))
 
     pickle.dump(dict['X_scaler'],
-                open(model_path + dep_var + "_X_scaler_multi", 'wb'))
+                open(model_path / dep_var / "_X_scaler_multi", 'wb'))
 
 
 
 
 ###############################################################################
 if __name__ == "__main__":
-    df = pd.read_pickle(input_path + 'merged').dropna()
+    df = pd.read_pickle(input_path / 'merged').dropna()
     df1 = getdf(df)
 
     _estimate(df1, "employment_status", "multiclass")

@@ -1,13 +1,23 @@
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import pickle
-import os
 import random
 
 import lightgbm as lgb
 import statsmodels.api as sm
 from sklearn.preprocessing import StandardScaler
 ##############################################################################
+dir = Path(__file__).parents[1]
+
+estimation_path = dir / "estimation"
+model_path = dir / "estimation/models"
+
+from estimation.standard import getdf, data_retired, data_working, data_fulltime, data_hours, data_earnings
+from estimation.multic import data_general
+
+
+"""
 ##############################################################################
 input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
 model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
@@ -21,6 +31,7 @@ os.chdir(sim_path)
 
 np.random.seed(2020)
 ##############################################################################
+"""
 ##############################################################################
 
 # Functions used for predicting values
@@ -28,9 +39,9 @@ def scale_data(dataf, dep_var=None, multi=0):
     dataf = dataf.copy()
     if multi == 1:
 
-        scaler = pd.read_pickle(model_path + dep_var + "_X_scaler_multi")
+        scaler = pd.read_pickle(model_path / dep_var / "_X_scaler_multi")
     else:
-        scaler = pd.read_pickle(model_path + dep_var + "_X_scaler")
+        scaler = pd.read_pickle(model_path / str(dep_var + "_X_scaler"))
     X = scaler.transform(np.asarray(dataf))
     return X
 
@@ -39,7 +50,7 @@ def _logit(X, variable):
 
     X_scaled = scale_data(X, variable)
     #X_scaled['const'] = 1
-    estimator  = pd.read_pickle(model_path + variable + "_logit")
+    estimator  = pd.read_pickle(model_path / str(variable + "_logit"))
     pred = estimator.predict(X_scaled)
 
     pred_scaled = np.zeros(len(pred))
@@ -55,10 +66,10 @@ def _ols(X, variable):
 
     X_scaled = scale_data(X, variable)
     #X['const'] = 1
-    estimator  = pd.read_pickle(model_path + variable + "_ols")
+    estimator  = pd.read_pickle(model_path / str(variable + "_ols"))
     pred = estimator.predict(X_scaled)
 
-    scaler = pd.read_pickle(model_path + variable + "_y_scaler")
+    scaler = pd.read_pickle(model_path / str(variable + "_y_scaler"))
     pred_scaled = scaler.inverse_transform(pred)
     pred_scaled[pred_scaled<0] = 0
 
@@ -68,13 +79,13 @@ def _ml(X, variable):
     X = X.copy()
 
     X_scaled = scale_data(X, variable)
-    estimator = lgb.Booster(model_file = model_path + variable + '_ml.txt')
+    estimator = lgb.Booster(model_file = str(model_path / str(variable + '_ml.txt')))
     pred = estimator.predict(X_scaled)
 
     if variable in ['hours', 'gross_earnings']:
         # pred_scaled = pred
         # Inverse transform regression results
-        scaler = pd.read_pickle(model_path + variable + "_y_scaler")
+        scaler = pd.read_pickle(model_path / str(variable + "_y_scaler"))
         pred_scaled = scaler.inverse_transform(pred)
     else:
         # Make binary prediction to straight 0 and 1
@@ -88,8 +99,7 @@ def _ext(X, variable):
     X = X.copy()
     X.reset_index(drop=True, inplace=True)
     X_scaled = scale_data(X, variable, multi=1)
-    estimator = lgb.Booster(model_file = model_path + \
-                            variable + '_extended.txt')
+    estimator = lgb.Booster(model_file = str(model_path / variable / '_extended.txt'))
     pred = estimator.predict(X_scaled)
 
     if variable == "employment_status":
@@ -303,7 +313,7 @@ def to_binary(dataf):
 
 # Functions for transition matrices
 def read_transition_data():
-    trans_matrices = pd.read_pickle(estimation_path + "transition_matrices/full_sample")
+    trans_matrices = pd.read_pickle(estimation_path / "transition_matrices/full_sample")
     return trans_matrices
 
 def get_access(dataf):

@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import pickle
@@ -10,8 +10,10 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
-input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
+###############################################################################
+dir = Path(__file__).parents[2]
+input_path = dir / "input"
+model_path = dir /"src/estimation/models/"
 ###############################################################################
 
 # Getting dataframe into right shape
@@ -252,10 +254,10 @@ def estimate_birth(dataf):
                    early_stopping_rounds = 5)
 
     pickle.dump(logit,
-                open(model_path + "birth_logit", 'wb'))
-    ml.save_model(model_path + "birth_ml.txt")
+                open(model_path / "birth_logit", 'wb'))
+    ml.save_model(str(model_path / "birth_ml.txt"))
     pickle.dump(dict['X_scaler'],
-                open(model_path + "birth_X_scaler", 'wb'))
+                open(model_path / "birth_X_scaler", 'wb'))
 
 
 def data_retired(dataf, estimate=1):
@@ -309,10 +311,10 @@ def estimate_retired(dataf):
                    early_stopping_rounds = 5)
 
     pickle.dump(logit,
-                open(model_path + "retired_logit", 'wb'))
-    ml.save_model(model_path + "retired_ml.txt")
+                open(model_path / "retired_logit", 'wb'))
+    ml.save_model(str(model_path / "retired_ml.txt"))
     pickle.dump(dict['X_scaler'],
-                open(model_path + "retired_X_scaler", 'wb'))
+                open(model_path / "retired_X_scaler", 'wb'))
 
 def data_working(dataf, estimate=1):
     dataf = dataf.copy()
@@ -377,10 +379,10 @@ def estimate_working(dataf):
                    early_stopping_rounds = 5)
 
     pickle.dump(logit,
-                open(model_path + "working_logit", 'wb'))
-    ml.save_model(model_path + "working_ml.txt")
+                open(model_path / "working_logit", 'wb'))
+    ml.save_model(str(model_path / "working_ml.txt"))
     pickle.dump(dict['X_scaler'],
-                open(model_path + "working_X_scaler", 'wb'))
+                open(model_path / "working_X_scaler", 'wb'))
 
 def data_fulltime(dataf, estimate=1):
     dataf = dataf.copy()
@@ -444,10 +446,10 @@ def estimate_fulltime(dataf):
                    early_stopping_rounds = 5)
 
     pickle.dump(logit,
-                open(model_path + "fulltime_logit", 'wb'))
-    ml.save_model(model_path + "fulltime_ml.txt")
+                open(model_path / "fulltime_logit", 'wb'))
+    ml.save_model(str(model_path / "fulltime_ml.txt"))
     pickle.dump(dict['X_scaler'],
-                open(model_path + "fulltime_X_scaler", 'wb'))
+                open(model_path / "fulltime_X_scaler", 'wb'))
 
 def data_hours(dataf, estimate=1):
     dataf = dataf.copy()
@@ -518,12 +520,12 @@ def estimate_hours(dataf):
                    early_stopping_rounds = 5)
 
     pickle.dump(ols,
-                open(model_path + "hours_ols", 'wb'))
-    ml.save_model(model_path + "hours_ml.txt")
+                open(model_path / "hours_ols", 'wb'))
+    ml.save_model(str(model_path / "hours_ml.txt"))
     pickle.dump(dict['y_scaler'],
-                open(model_path + "hours_y_scaler", 'wb'))
+                open(model_path / "hours_y_scaler", 'wb'))
     pickle.dump(dict['X_scaler'],
-                open(model_path + "hours_X_scaler", 'wb'))
+                open(model_path / "hours_X_scaler", 'wb'))
 
 def data_earnings(dataf, estimate=1):
     dataf = dataf.copy()
@@ -593,17 +595,17 @@ def estimate_earnings(dataf):
                    early_stopping_rounds = 5)
 
     pickle.dump(ols,
-                open(model_path + "gross_earnings_ols", 'wb'))
-    ml.save_model(model_path + "gross_earnings_ml.txt")
+                open(model_path / "gross_earnings_ols", 'wb'))
+    ml.save_model(str(model_path / "gross_earnings_ml.txt"))
     pickle.dump(dict['y_scaler'],
-                open(model_path + "gross_earnings_y_scaler", 'wb'))
+                open(model_path / "gross_earnings_y_scaler", 'wb'))
     pickle.dump(dict['X_scaler'],
-                open(model_path + "gross_earnings_X_scaler", 'wb'))
+                open(model_path / "gross_earnings_X_scaler", 'wb'))
 
 
 ###############################################################################
 if __name__ == "__main__":
-    df = pd.read_pickle(input_path + 'merged').dropna()
+    df = pd.read_pickle(input_path / 'merged').dropna()
     df1 = getdf(df)
 
     estimate_retired(df1)

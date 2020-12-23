@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import pickle
@@ -9,8 +9,11 @@ from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
 
-input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
+###############################################################################
+dir = Path(__file__).parents[2]
+input_path = dir / "input"
+model_path = dir /"src/estimation/models/"
+###############################################################################
 
 def getdf(dataf):
     dataf = dataf.copy()
@@ -212,9 +215,9 @@ def _estimate(dataf, dep_var, type):
                      feature_name = dict['features'])
 
     if dep_var == 'gross_earnings':
-        modl.save_model(model_path + "earnings_extended.txt")
+        modl.save_model(str(model_path / "earnings_extended.txt"))
     else:
-        modl.save_model(model_path + dep_var + "_extended.txt")
+        modl.save_model(str(model_path / dep_var / "_extended.txt"))
 
 
 # df = pd.read_pickle(input_path + 'imputed08').dropna()

@@ -1,13 +1,23 @@
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import pickle
-import os
 
 import lightgbm as lgb
 import statsmodels.api as sm
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import NearestNeighbors
 ##############################################################################
+dir = Path(__file__).parents[2]
+
+input_path = dir / "input/"
+estimation_path = dir / "src/estimation"
+model_path = dir / "src/estimation/models"
+
+
+from estimation.standard import data_birth
+from estimation.extended import data_general
+"""
 ##############################################################################
 model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
@@ -19,9 +29,10 @@ from standard import data_birth
 from extended import data_general
 
 os.chdir(sim_path)
+"""
 ##############################################################################
-mortality = pd.read_csv(input_path + "mortality")
-fertility = pd.read_csv(input_path + "fertility")
+mortality = pd.read_csv(input_path / "mortality.csv")
+fertility = pd.read_csv(input_path / "fertility.csv")
 ##############################################################################
 
 
