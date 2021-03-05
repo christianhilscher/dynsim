@@ -137,4 +137,5 @@ dmypy.json
 /src/estimation/modelsCV
 /src/estimation/modelsWA_CV
 .vscode
+/src/.vscode
 /literature
