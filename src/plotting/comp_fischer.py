@@ -10,37 +10,35 @@ from bokeh.plotting import figure, show
 from bokeh.models import ColumnDataSource
 from bokeh.io import export_png
 
-
 ###############################################################################
 dir = Path(__file__).resolve().parents[2]
 current_week = "week" + str(sys.argv[1])
 
 path = dir / "output" / current_week
 path.mkdir(parents=True, exist_ok=True)
-
 ###############################################################################
 
-
-def restrict(dataf, working=False, female=None, max_age=None):
+def condition_by_type(dataf, method, working=False, female=None, max_age=None, ):
     
     dataf = dataf.copy()
     
     # Condition to include all or only working people 
     if working:
-        condition_work = dataf["working_" + "real"] == 1
+        condition_work = dataf["working_" + method] == 1
     else:
         condition_work = np.ones(len(dataf))
     
     # Including either all people, or only male and female
     if female == 1:
-        condition_female = dataf["female_" + "real"] == 1
+        condition_female = dataf["female_" + method] == 1
     elif female == 0:
-        condition_female = dataf["female_" + "real"] == 0
+        condition_female = dataf["female_" + method] == 0
     else:
         condition_female = np.ones(len(dataf))
-        
+    
+    # Having an upper bound on age
     if type(max_age) == int:
-        condition_age = dataf["age_" + "real"] <= max_age
+        condition_age = dataf["age_" + method] <= max_age
     else:
         condition_age = np.ones(len(dataf))
         
@@ -50,6 +48,43 @@ def restrict(dataf, working=False, female=None, max_age=None):
                         + (condition_age).astype(int)
                         
     df_out = dataf[final_condition == 3]
+    
+    return df_out
+
+def restrict(dataf, working=False, female=None, max_age=None):
+    
+    dataf = dataf.copy()
+    
+    out_dici = {"real": condition_by_type(dataf, "real", working, female, max_age),
+                "standard": condition_by_type(dataf, "standard", working, female, max_age),
+                "ext": condition_by_type(dataf, "ext", working, female, max_age)}
+    
+    return out_dici
+
+def calc_autocorr(dici, variable):
+    
+    # Space for coefficients
+    age = np.sort(dici["real"]["age_real"].unique())
+    coeffs = np.empty(shape=(len(age), 3))
+    
+    for (ind_t, method) in enumerate(["real", "standard", "ext"]):
+        
+        dataf_use = dici[method]
+        var = variable + "_" + method
+        var_lag = variable + "_t1_" + method
+        
+        # Calculate the coefficient for every age seperately
+        for (ind_a, a) in enumerate(age):
+            X = dataf_use.loc[dataf_use["age_" + method] == a, var_lag]
+            Y = dataf_use.loc[dataf_use["age_" + method] == a, var]
+            
+            coeffs[ind_a, ind_t] = get_coeff(Y, X)
+    
+    # Concat all of them into a dataframe
+    df_out = pd.DataFrame(data={"age": age,
+                                "real": coeffs[:,0],
+                                "standard": coeffs[:,1],
+                                "ext": coeffs[:, 2]})
     
     return df_out
 
@@ -63,37 +98,6 @@ def get_coeff(y, x):
     res = sm.OLS(y, x).fit()
     
     return res.params[1]
-   
- 
-def calc_autocorr(dataf, variable):
-    
-    dataf = dataf.copy()
-    
-    # First sort age and make space for the coefficients
-    age = np.sort(dataf["age_real"].unique())
-    coeffs = np.empty(shape= (len(age), 3))
-    
-    # Looping through every typpe
-    for (ind_t, typpe) in enumerate(["real", "standard", "ext"]):    
-        
-        var = variable + "_" + typpe
-        var_lag = variable + "_t1_" + typpe
-        
-        # Calculate the coefficient for every age seperately
-        for (ind_a, a) in enumerate(age):
-            X = dataf.loc[dataf["age_" + typpe] == a, var_lag]
-            Y = dataf.loc[dataf["age_" + typpe] == a, var]
-            
-            coeffs[ind_a, ind_t] = get_coeff(Y, X)
-    
-    # Concat all of them into a dataframe
-    df_out = pd.DataFrame(data={"age": age,
-                                "real": coeffs[:,0],
-                                "standard": coeffs[:,1],
-                                "ext": coeffs[:, 2]})
-    
-    return df_out
-
 
 def plot(dataf, long_title, short_title):
     
@@ -122,8 +126,6 @@ def plot(dataf, long_title, short_title):
     p = make_pretty(p)
     
     export_png(p, filename=str(path / short_title))
-    
-
     
 def make_pretty(p):
     p.xgrid.grid_line_color = None
@@ -157,6 +159,8 @@ def plot_wrapper(dataf, variable, working=False, female=None, max_age=None):
     
     title, filename = get_names(variable, female)
     plot(autocorr, title, filename)
+    
+
 ##############################################################################
 
 if __name__ == "__main__":
@@ -172,7 +176,6 @@ if __name__ == "__main__":
     plot_wrapper(df, "hours", working=True, max_age=65, female=0)
     plot_wrapper(df, "hours", working=True, max_age=65, female=1)
     
-    
     # Fulltime
     plot_wrapper(df, "fulltime", working=True, max_age=65, female=0)
     plot_wrapper(df, "fulltime", working=True, max_age=65)
@@ -182,3 +185,5 @@ if __name__ == "__main__":
     plot_wrapper(df, "working", working=False, max_age=65)
     plot_wrapper(df, "working", working=False, max_age=65, female=0)
     plot_wrapper(df, "working", working=False, max_age=65, female=1)
+
+
