@@ -134,3 +134,8 @@ dmypy.json
 /output
 /src/tries.py
 /src/estimation/models
+/src/estimation/modelsCV
+/src/estimation/modelsWA_CV
+.vscode
+/src/.vscode
+/literature

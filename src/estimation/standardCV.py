@@ -1,38 +1,30 @@
-from pathlib import Path
+import os
 import numpy as np
 import pandas as pd
 import pickle
 
 import statsmodels.api as sm
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
+
 
 import lightgbm as lgb
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
-###############################################################################
-dir = Path(__file__).parents[2]
-input_path = dir / "input"
-model_path = dir /"src/estimation/models/"
-###############################################################################
+input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
+model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/modelsWA_CV/"
 
-# Getting dataframe into right shape
 def getdf(dataf):
     dataf = dataf.copy()
 
-    # Only keeping those with more than two consective years
     condition = dataf.groupby('pid')['year'].count()>2
     dataf = dataf.set_index('pid')[condition]
     year_list = dataf['year'].unique()
 
-    # Making space
     dataf['hours_t1'] = np.NaN
     dataf['gross_earnings_t1'] = np.NaN
 
-    # Final dataframe for output
     dataf_out = pd.DataFrame()
-
-    # For each year use the previous year's values to fill up t-1 and t-2 columns
     for i in np.sort(year_list)[2:]:
         df_now = dataf[dataf['year'] == i].copy()
         df_yesterday = dataf[dataf['year'] == (i-1)].copy()
@@ -54,7 +46,6 @@ def getdf(dataf):
     dataf_out.dropna(inplace=True)
     return dataf_out
 
-
 def get_dependent_var(dataf, dep_var):
     dataf = dataf.copy()
 
@@ -73,10 +64,11 @@ def _prepare_classifier(dataf):
     weights_train = X_train['personweight']
     X_train.drop('personweight', axis=1, inplace=True)
 
+
     weights_test = X_test['personweight']
     X_test.drop('personweight', axis=1, inplace=True)
 
-    # When having weights and interaction effects, drop interaction w/ weights
+
     if "personweight_interacted" in X.columns.tolist():
         X_train.drop('personweight_interacted', axis=1, inplace=True)
         X_test.drop('personweight_interacted', axis=1, inplace=True)
@@ -85,8 +77,7 @@ def _prepare_classifier(dataf):
 
     # Scaling
     X_train_scaled = StandardScaler().fit_transform(np.asarray(X_train))
-    X_test_scaler = StandardScaler().fit(np.asarray(X_test))
-    X_test_scaled = X_test_scaler.transform(np.asarray(X_test))
+    X_test_scaled = StandardScaler().fit_transform(np.asarray(X_test))
 
     # Coeffs feature_names
     feature_names = X_train.columns.tolist()
@@ -101,10 +92,8 @@ def _prepare_classifier(dataf):
     lgb_test = lgb.Dataset(X_test_scaled, y_test,
                            weight = weights_test)
 
-    # Return dictionary with needed values
     out_dici = {'X_train': X_train_scaled,
                 'X_test': X_test_scaled,
-                'X_scaler': X_test_scaler,
                 'y_train': y_train,
                 'y_test': y_test,
                 'lgb_train': lgb_train,
@@ -129,8 +118,7 @@ def _prepare_regressor(dataf):
 
     # Scaling
     X_train_scaled = StandardScaler().fit_transform(np.asarray(X_train))
-    X_test_scaler = StandardScaler().fit(np.asarray(X_test))
-    X_test_scaled = X_test_scaler.transform(np.asarray(X_test))
+    X_test_scaled = StandardScaler().fit_transform(np.asarray(X_test))
     y_train_scaled = StandardScaler().fit_transform(np.asarray(y_train).reshape(-1,1))
 
     # Saving the scaler of the test data to convert the predicted values again
@@ -154,17 +142,15 @@ def _prepare_regressor(dataf):
 
     out_dici = {'X_train': X_train_scaled,
                 'X_test': X_test,
-                'X_scaler': X_test_scaler,
                 'y_train': y_train_scaled,
                 'y_test': y_test,
-                'y_scaler': y_test_scaler,
+                'scaler': y_test_scaler,
                 'lgb_train': lgb_train,
                 'lgb_test': lgb_test,
                 'features': feature_names,
                 'weights': weights_train}
     return out_dici
 
-# Interaction effects for standard part
 def _interact(dataf, estimate):
     dataf = dataf.copy()
 
@@ -232,32 +218,34 @@ def estimate_birth(dataf):
     dataf.dropna(inplace=True)
     dict = _prepare_classifier(dataf)
 
-    params_m = {'task' : 'train',
-        'boosting_type' : 'gbdt',
-        'n_estimators': 350,
-        'objective': 'binary',
-        'eval_metric': 'logloss',
-        'learning_rate': 0.05,
-        'feature_fraction': [0.9],
-        'num_leaves': 31,
-        'verbose': 0}
-
     model = LogisticRegression(C=1e9)
     logit = model.fit(dict['X_train'], dict['y_train'],
               sample_weight=dict['weights'])
 
+    estimator = lgb.LGBMRegressor(num_leaves = 31)
+    modl = estimator.fit(dict['X_train'], dict['y_train'],
+                  eval_set=[(dict['X_test'], dict['y_test'])],
+                  feature_name = dict['features'],
+                  eval_metric = 'logloss',
+                  early_stopping_rounds = 5)
 
-    ml = lgb.train(params_m,
-                   train_set = dict['lgb_train'],
-                   valid_sets = dict['lgb_test'],
-                   feature_name = dict['features'],
-                   early_stopping_rounds = 5)
+    param_grid = {
+        'learning_rate': np.linspace(0.01, 1, 7),
+        'n_estimators': [150, 200, 250],
+        'boosting_type': ['gbdt', 'rf', 'dart'],
+        'feature_fraction': [0.9],
+        'bagging_fraction': [0.8],
+        'bagging_freq': [5]
+    }
+
+    cvmodl = GridSearchCV(modl, param_grid, cv=3, verbose=5, n_jobs=-1)
+    cvmodl.fit(dict['X_train'], dict['y_train'])
+
+    ml = cvmodl.best_estimator_.booster_
 
     pickle.dump(logit,
-                open(model_path / "birth_logit", 'wb'))
-    ml.save_model(str(model_path / "birth_ml.txt"))
-    pickle.dump(dict['X_scaler'],
-                open(model_path / "birth_X_scaler", 'wb'))
+                open(model_path + "birth_logit", 'wb'))
+    ml.save_model(model_path + "birth_ml.txt")
 
 
 def data_retired(dataf, estimate=1):
@@ -266,14 +254,23 @@ def data_retired(dataf, estimate=1):
     if estimate == 1:
         dataf= get_dependent_var(dataf, 'retired')
         vars_retain = ['dep_var',
-                       'age',
-                       'female',
                        'retired_t1',
+                       'working_t1',
+                       'n_children',
+                       'hh_youngest_age',
+                       'hh_income',
+                       'hh_frac_working',
+                       'female',
+                       'age',
                        'personweight']
     elif estimate == 0:
-        vars_retain = ['age',
+        vars_retain = ['retired_t1',
+                       'working_t1',
+                       'n_children',
+                       'hh_youngest_age',
+                       'hh_income', 'hh_frac_working',
                        'female',
-                       'retired_t1']
+                       'age']
     else:
         raise ValueError("0 is for simulation, 1 for estimation")
 
@@ -291,30 +288,34 @@ def estimate_retired(dataf):
     dataf.dropna(inplace=True)
     dict = _prepare_classifier(dataf)
 
-    params_m = {'boosting_type': 'gbdt',
-        'n_estimators': 350,
-        'objective': 'binary',
-        'eval_metric': 'logloss',
-        'learning_rate': 0.05,
-        'feature_fraction': [0.9],
-        'num_leaves': 31,
-        'verbose': 0}
-
     model = LogisticRegression(C=1e9)
     logit = model.fit(dict['X_train'], dict['y_train'],
               sample_weight=dict['weights'])
 
-    ml = lgb.train(params_m,
-                   train_set = dict['lgb_train'],
-                   valid_sets = dict['lgb_test'],
-                   feature_name = dict['features'],
-                   early_stopping_rounds = 5)
+    estimator = lgb.LGBMRegressor(num_leaves = 31)
+    modl = estimator.fit(dict['X_train'], dict['y_train'],
+                  eval_set=[(dict['X_test'], dict['y_test'])],
+                  feature_name = dict['features'],
+                  eval_metric = 'logloss',
+                  early_stopping_rounds = 5)
+
+    param_grid = {
+        'learning_rate': np.linspace(0.01, 1, 7),
+        'n_estimators': [150, 200, 250],
+        'boosting_type': ['gbdt', 'rf', 'dart'],
+        'feature_fraction': [0.9],
+        'bagging_fraction': [0.8],
+        'bagging_freq': [5]
+    }
+
+    cvmodl = GridSearchCV(modl, param_grid, cv=3, verbose=5, n_jobs=-1)
+    cvmodl.fit(dict['X_train'], dict['y_train'])
+
+    ml = cvmodl.best_estimator_.booster_
+    ml.save_model(model_path + "retired_ml.txt")
 
     pickle.dump(logit,
-                open(model_path / "retired_logit", 'wb'))
-    ml.save_model(str(model_path / "retired_ml.txt"))
-    pickle.dump(dict['X_scaler'],
-                open(model_path / "retired_X_scaler", 'wb'))
+                open(model_path + "retired_logit", 'wb'))
 
 def data_working(dataf, estimate=1):
     dataf = dataf.copy()
@@ -338,8 +339,7 @@ def data_working(dataf, estimate=1):
                        'working_t1',
                        'n_children',
                        'hh_youngest_age',
-                       'hh_income',
-                       'hh_frac_working',
+                       'hh_income', 'hh_frac_working',
                        'female',
                        'age']
     else:
@@ -358,31 +358,33 @@ def estimate_working(dataf):
     dataf.dropna(inplace=True)
     dict = _prepare_classifier(dataf)
 
-    params_m = {'task' : 'train',
-        'boosting_type' : 'gbdt',
-        'n_estimators': 350,
-        'objective': 'binary',
-        'eval_metric': 'logloss',
-        'learning_rate': 0.05,
-        'feature_fraction': [0.9],
-        'num_leaves': 31,
-        'verbose': 0}
-
     model = LogisticRegression(C=1e9)
     logit = model.fit(dict['X_train'], dict['y_train'],
               sample_weight=dict['weights'])
+    estimator = lgb.LGBMRegressor(num_leaves = 31)
+    modl = estimator.fit(dict['X_train'], dict['y_train'],
+                  eval_set=[(dict['X_test'], dict['y_test'])],
+                  feature_name = dict['features'],
+                  eval_metric = 'logloss',
+                  early_stopping_rounds = 5)
 
-    ml = lgb.train(params_m,
-                   train_set = dict['lgb_train'],
-                   valid_sets = dict['lgb_test'],
-                   feature_name = dict['features'],
-                   early_stopping_rounds = 5)
+    param_grid = {
+        'learning_rate': np.linspace(0.01, 1, 7),
+        'n_estimators': [150, 200, 250],
+        'boosting_type': ['gbdt', 'rf', 'dart'],
+        'feature_fraction': [0.9],
+        'bagging_fraction': [0.8],
+        'bagging_freq': [5]
+    }
+
+    cvmodl = GridSearchCV(modl, param_grid, cv=3, verbose=5, n_jobs=-1)
+    cvmodl.fit(dict['X_train'], dict['y_train'])
+
+    ml = cvmodl.best_estimator_.booster_
 
     pickle.dump(logit,
-                open(model_path / "working_logit", 'wb'))
-    ml.save_model(str(model_path / "working_ml.txt"))
-    pickle.dump(dict['X_scaler'],
-                open(model_path / "working_X_scaler", 'wb'))
+                open(model_path + "working_logit", 'wb'))
+    ml.save_model(model_path + "working_ml.txt")
 
 def data_fulltime(dataf, estimate=1):
     dataf = dataf.copy()
@@ -425,31 +427,33 @@ def estimate_fulltime(dataf):
     dataf.dropna(inplace=True)
     dict = _prepare_classifier(dataf)
 
-    params_m = {'task' : 'train',
-        'boosting_type' : 'gbdt',
-        'n_estimators': 350,
-        'objective': 'binary',
-        'eval_metric': 'logloss',
-        'learning_rate': 0.05,
-        'feature_fraction': [0.9],
-        'num_leaves': 31,
-        'verbose': 0}
 
     model = LogisticRegression(C=1e9)
     logit = model.fit(dict['X_train'], dict['y_train'],
               sample_weight=dict['weights'])
+    estimator = lgb.LGBMRegressor(num_leaves = 31)
+    modl = estimator.fit(dict['X_train'], dict['y_train'],
+                  eval_set=[(dict['X_test'], dict['y_test'])],
+                  feature_name = dict['features'],
+                  eval_metric = 'logloss',
+                  early_stopping_rounds = 5)
 
-    ml = lgb.train(params_m,
-                   train_set = dict['lgb_train'],
-                   valid_sets = dict['lgb_test'],
-                   feature_name = dict['features'],
-                   early_stopping_rounds = 5)
+    param_grid = {
+        'learning_rate': np.linspace(0.01, 1, 7),
+        'n_estimators': [150, 200, 250],
+        'boosting_type': ['gbdt', 'rf', 'dart'],
+        'feature_fraction': [0.9],
+        'bagging_fraction': [0.8],
+        'bagging_freq': [5]
+    }
 
+    cvmodl = GridSearchCV(modl, param_grid, cv=3, verbose=5, n_jobs=-1)
+    cvmodl.fit(dict['X_train'], dict['y_train'])
+
+    ml = cvmodl.best_estimator_.booster_
     pickle.dump(logit,
-                open(model_path / "fulltime_logit", 'wb'))
-    ml.save_model(str(model_path / "fulltime_ml.txt"))
-    pickle.dump(dict['X_scaler'],
-                open(model_path / "fulltime_X_scaler", 'wb'))
+                open(model_path + "fulltime_logit", 'wb'))
+    ml.save_model(model_path + "fulltime_ml.txt")
 
 def data_hours(dataf, estimate=1):
     dataf = dataf.copy()
@@ -498,34 +502,36 @@ def estimate_hours(dataf):
     dataf.dropna(inplace=True)
     dict = _prepare_regressor(dataf)
 
-    params_r = {'boosting_type' : 'gbdt',
-              'n_estimators': 350,
-              'objective' : 'l2',
-              'metric' : 'l2',
-              'num_leaves' : 31,
-              'learning_rate' : 0.15,
-              'feature_fraction': [0.9],
-              'bagging_fraction': [0.8],
-              'bagging_freq': [5],
-              'verbose' : 5}
-
     model = LinearRegression()
     ols = model.fit(dict['X_train'], dict['y_train'],
               sample_weight=dict['weights'])
 
-    ml = lgb.train(params_r,
-                   train_set = dict['lgb_train'],
-                   valid_sets = dict['lgb_test'],
-                   feature_name = dict['features'],
-                   early_stopping_rounds = 5)
+    estimator = lgb.LGBMRegressor(num_leaves = 31)
+    modl = estimator.fit(dict['X_train'], dict['y_train'],
+                  eval_set=[(dict['X_test'], dict['y_test'])],
+                  feature_name = dict['features'],
+                  eval_metric = 'l2',
+                  early_stopping_rounds = 5)
+
+    param_grid = {
+        'learning_rate': np.linspace(0.01, 1, 7),
+        'n_estimators': [150, 200, 250],
+        'boosting_type': ['gbdt', 'rf', 'dart'],
+        'feature_fraction': [0.9],
+        'bagging_fraction': [0.8],
+        'bagging_freq': [5]
+    }
+
+    cvmodl = GridSearchCV(modl, param_grid, cv=3, verbose=5, n_jobs=-1)
+    cvmodl.fit(dict['X_train'], dict['y_train'])
+
+    ml = cvmodl.best_estimator_.booster_
 
     pickle.dump(ols,
-                open(model_path / "hours_ols", 'wb'))
-    ml.save_model(str(model_path / "hours_ml.txt"))
-    pickle.dump(dict['y_scaler'],
-                open(model_path / "hours_y_scaler", 'wb'))
-    pickle.dump(dict['X_scaler'],
-                open(model_path / "hours_X_scaler", 'wb'))
+                open(model_path + "hours_ols", 'wb'))
+    ml.save_model(model_path + "hours_ml.txt")
+    pickle.dump(dict['scaler'],
+                open(model_path + "hours_scaler", 'wb'))
 
 def data_earnings(dataf, estimate=1):
     dataf = dataf.copy()
@@ -573,39 +579,41 @@ def estimate_earnings(dataf):
     dataf.dropna(inplace=True)
     dict = _prepare_regressor(dataf)
 
-    params_r = {'boosting_type' : 'gbdt',
-              'n_estimators': 350,
-              'objective' : 'l2',
-              'metric' : 'l2',
-              'num_leaves' : 31,
-              'learning_rate' : 0.15,
-              'feature_fraction': [0.9],
-              'bagging_fraction': [0.8],
-              'bagging_freq': [5],
-              'verbose' : 5}
-
     model = LinearRegression()
     ols = model.fit(dict['X_train'], dict['y_train'],
               sample_weight=dict['weights'])
 
-    ml = lgb.train(params_r,
-                   train_set = dict['lgb_train'],
-                   valid_sets = dict['lgb_test'],
-                   feature_name = dict['features'],
-                   early_stopping_rounds = 5)
+    estimator = lgb.LGBMRegressor(num_leaves = 31)
+    modl = estimator.fit(dict['X_train'], dict['y_train'],
+                  eval_set=[(dict['X_test'], dict['y_test'])],
+                  feature_name = dict['features'],
+                  eval_metric = 'l2',
+                  early_stopping_rounds = 5)
+
+    param_grid = {
+        'learning_rate': np.linspace(0.01, 1, 7),
+        'n_estimators': [150, 200, 250],
+        'boosting_type': ['gbdt', 'rf', 'dart'],
+        'feature_fraction': [0.9],
+        'bagging_fraction': [0.8],
+        'bagging_freq': [5]
+    }
+
+    cvmodl = GridSearchCV(modl, param_grid, cv=3, verbose=5, n_jobs=-1)
+    cvmodl.fit(dict['X_train'], dict['y_train'])
+
+    ml = cvmodl.best_estimator_.booster_
 
     pickle.dump(ols,
-                open(model_path / "gross_earnings_ols", 'wb'))
-    ml.save_model(str(model_path / "gross_earnings_ml.txt"))
-    pickle.dump(dict['y_scaler'],
-                open(model_path / "gross_earnings_y_scaler", 'wb'))
-    pickle.dump(dict['X_scaler'],
-                open(model_path / "gross_earnings_X_scaler", 'wb'))
+                open(model_path + "gross_earnings_ols", 'wb'))
+    ml.save_model(model_path + "gross_earnings_ml.txt")
+    pickle.dump(dict['scaler'],
+                open(model_path + "gross_earnings_scaler", 'wb'))
 
 
 ###############################################################################
 if __name__ == "__main__":
-    df = pd.read_pickle(input_path / 'merged').dropna()
+    df = pd.read_pickle(input_path + 'workingage').dropna()
     df1 = getdf(df)
 
     estimate_retired(df1)

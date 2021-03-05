@@ -10,7 +10,7 @@ from bokeh.plotting import figure, output_file, show, gridplot
 from bokeh.models import ColumnDataSource
 from bokeh.palettes import Spectral6
 ###############################################################################
-current_week = "30"
+current_week = "38"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -19,7 +19,7 @@ output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 plot_path = "/Users/christianhilscher/Desktop/dynsim/src/plotting/"
 os.chdir(plot_path)
 
-df = pd.read_pickle(output_week + "df_analysis")
+df = pd.read_pickle(output_week + "df_analysis_full")
 
 def remove_outliers(arr, low, high):
     arr = arr.copy()
@@ -43,11 +43,11 @@ def _hist_df(arr):
 
 def make_plot_earnings(dataf, ahead):
     dataf = dataf.copy()
-    dataf = dataf[dataf["hours"]>0]
+    dataf = dataf[dataf["gross_earnings_real"]>0]
     df_ana = dataf[dataf["period_ahead"]==ahead]
 
-    earnings_diff_ml = df_ana["hours_x"] - df_ana["hours_y"]
-    earnings_diff_standard = df_ana["hours_x"] - df_ana["hours"]
+    earnings_diff_ml = df_ana["gross_earnings_real"] - df_ana["gross_earnings_ml"]
+    earnings_diff_standard = df_ana["gross_earnings_real"] - df_ana["gross_earnings_standard"]
 
 
     abc = _hist_df(earnings_diff_ml)
@@ -61,7 +61,7 @@ def make_plot_earnings(dataf, ahead):
     src = ColumnDataSource(hist_df)
 
     sze = len(df_ana)
-    title = "hours: Errors with " + str(ahead) + " years ahead prediction. Sample Size: " + str(sze)
+    title = "gross_earnings: Errors with " + str(ahead) + " years ahead prediction. Sample Size: " + str(sze)
     p = figure(plot_height = 600, plot_width = 600,
                   y_axis_label = "Count", title=title)
 
@@ -83,5 +83,5 @@ def make_plts(dataf):
 
 
 pic = make_plts(df)
-output_file(output_week + "hours_difference" + ".html")
+output_file(output_week + "gross_earnings_difference" + ".html")
 show(pic)

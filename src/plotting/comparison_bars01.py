@@ -11,7 +11,7 @@ from bokeh.models import ColumnDataSource, FactorRange
 from bokeh.palettes import Spectral6
 from bokeh.transform import factor_cmap
 ###############################################################################
-current_week = "30"
+current_week = "38"
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -20,9 +20,12 @@ output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 plot_path = "/Users/christianhilscher/Desktop/dynsim/src/plotting/"
 os.chdir(plot_path)
 
+palette = ["#c9d9d3", "#718dbf", "#e84d60", "#648450"]
 
-def make_plot(dataf, into_future):
+
+def make_plot(dataf, into_future, variable):
     dataf = dataf.copy()
+    # dataf = dataf[dataf[variable+"_real"]>0]
 
     diff_ml = np.empty(len(into_future))
     diff_standard = np.empty_like(diff_ml)
@@ -30,9 +33,9 @@ def make_plot(dataf, into_future):
 
     for i, ahead in enumerate(into_future):
         df_ana = dataf[dataf["period_ahead"]==ahead]
-        real_value = df_ana[variable + "_x"].mean()
-        ml_value = df_ana[variable + "_y"].mean()
-        standard_value = df_ana[variable].mean()
+        real_value = df_ana[variable + "_real"].mean()
+        ml_value = df_ana[variable + "_ml"].mean()
+        standard_value = df_ana[variable+"_standard"].mean()
 
         diff_ml[i] = ml_value
         diff_standard[i] = standard_value
@@ -51,7 +54,7 @@ def make_plot(dataf, into_future):
 
     s = ColumnDataSource(data=dict(x=x, counts=counts))
     p = figure(x_range=FactorRange(*x), title = name)
-    p.vbar(x='x', top='counts', width=0.9, source=s,fill_color=factor_cmap('x', palette=Spectral6, factors=types, start=1, end=2))
+    p.vbar(x='x', top='counts', width=0.9, source=s,fill_color=factor_cmap('x', palette=palette, factors=types, start=1, end=2))
     p.y_range.start = 0
     p.x_range.range_padding = 0.1
     p.xaxis.major_label_orientation = 1
@@ -60,11 +63,11 @@ def make_plot(dataf, into_future):
     return p
 
 
-df = pd.read_pickle(output_week + "df_analysis")
+df = pd.read_pickle(output_week + "df_analysis_full")
 
-into_future = np.arange(1, len(df["period_ahead"].unique()), 3)
+into_future = np.arange(1, len(df["period_ahead"].unique()), 4)
 variable = "fulltime"
 
-a = make_plot(df, into_future)
+a = make_plot(df, into_future, variable)
 output_file(output_week + variable + ".html")
 show(a)

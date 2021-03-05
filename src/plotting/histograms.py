@@ -11,7 +11,7 @@ from bokeh.models import ColumnDataSource, FactorRange
 from bokeh.palettes import Spectral6
 from bokeh.transform import factor_cmap
 ###############################################################################
-current_week = 30
+current_week = 37
 output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
 pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
 ###############################################################################
@@ -43,14 +43,14 @@ def _hist_df(arr, bins):
 def histo(dataf, var, type, binsize):
     dataf = dataf.copy()
 
-    dataf = dataf[dataf[var]>0]
+    dataf = dataf[dataf[var+"_real"]>0]
 
     if type == "ml":
-        value = dataf[var + "_y"].to_numpy()
+        value = dataf[var + "_ml"].to_numpy()
     elif type == "standard":
-        value = dataf[var].to_numpy()
+        value = dataf[var + "_standard"].to_numpy()
     elif type == "real":
-        value = dataf[var + "_x"].to_numpy()
+        value = dataf[var + "_real"].to_numpy()
 
     histo_df = _hist_df(value, binsize)
     name = "Histogram of " + var + " with " + str(binsize) + " bins"

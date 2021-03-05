@@ -1,11 +1,11 @@
+from pathlib import Path
 import numpy as np
 import pandas as pd
-import os
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set(style="darkgrid")
 
+from sim.family_module import separations, marriage, dating_market, birth, death
+from sim.work_module import sim_retired, sim_working, sim_fulltime, sim_hours, sim_earnings, scale_data, make_hh_vars, sim_multi_employment, to_binary, to_category
+"""
 sim_path = "/Users/christianhilscher/Desktop/dynsim/src/sim/"
 estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
 input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
@@ -14,10 +14,15 @@ cwd = os.getcwd()
 ##############################################################################
 os.chdir(sim_path)
 from family_module import separations, marriage, dating_market, birth, death
-from work_module import sim_lfs, sim_working, sim_fulltime, sim_hours, sim_earnings, scale_data, make_hh_vars, sim_multi_employment
+from work_module import sim_retired, sim_working, sim_fulltime, sim_hours, sim_earnings, scale_data, make_hh_vars, sim_multi_employment, to_binary, to_category
 
 os.chdir(cwd)
+"""
 ##############################################################################
+def quick_analysis(dataf):
+    print("Null Values:")
+    print(dataf.apply(lambda x: sum(x.isnull()) / len(dataf)))
+
 def make_cohort(dataf):
     dataf = dataf.copy()
     birthyear = dataf['year'] - dataf['age']
@@ -57,7 +62,7 @@ def _return_hh_vars(dataf):
 def _shift_vars(dataf):
     dataf = dataf.copy()
 
-    dataf['lfs_t1'] = dataf['lfs']
+    dataf['retired_t1'] = dataf['retired']
     dataf['working_t1'] = dataf['working']
     dataf['fulltime_t1'] = dataf['fulltime']
     dataf['hours_t2'] = dataf['hours_t1']
@@ -77,13 +82,15 @@ def update(dataf):
     dataf['age'] += 1
     dataf = _shift_vars(dataf)
     estimated_vars = ['birth',
-                      'lfs',
+                      'retired',
                       'working',
                       'fulltime',
                       'hours',
-                      'gross_earnings']
+                      'gross_earnings',
+                      'employment_status']
 
     dataf[estimated_vars] = 0
+    dataf = _moving(dataf)
     return dataf
 
 def run_family_module(dataf, type):
@@ -103,28 +110,31 @@ def run_work_module(dataf, type):
 
     dataf = _return_hh_vars(dataf)
 
-    lfs = sim_lfs(dataf,type)
-    dataf['lfs'] = lfs
-
-    # From now on always conditional on being in the labor force
-    if np.sum(lfs)>0:
-        working = sim_working(dataf[dataf['lfs'] == 1], type)
-    else:
-        working = 0
-    dataf.loc[dataf['lfs'] == 1, 'working'] = working
-
-    # From now on always conditional on being employed
-    if np.sum(working)>0:
-        fulltime = sim_fulltime(dataf[dataf['working'] == 1], type)
-    else:
-        fulltime = 0
-    dataf.loc[dataf['working'] == 1, 'fulltime'] = fulltime
-
     if type == "ext":
         empl = sim_multi_employment(dataf)
         dataf["employment_status"] = empl
+        dataf = to_binary(dataf)
+
+        working = dataf["working"]
     else:
-        pass
+        retired = sim_retired(dataf, type)
+        dataf['retired'] = retired
+
+        # From now on always conditional on being in the labor force
+        if np.sum(retired)!=len(dataf):
+            working = sim_working(dataf[dataf['retired'] == 0], type)
+        else:
+            working = 0
+        dataf.loc[dataf['retired'] == 0, 'working'] = working
+
+        # From now on always conditional on being employed
+        if np.sum(working)>0:
+            fulltime = sim_fulltime(dataf[dataf['working'] == 1], type)
+        else:
+            fulltime = 0
+        dataf.loc[dataf['working'] == 1, 'fulltime'] = fulltime
+
+        dataf = to_category(dataf)
 
     if np.sum(working)>0:
         hours = sim_hours(dataf[dataf['working'] == 1], type)
@@ -169,7 +179,7 @@ def fill_dataf(dataf):
         df = dataf.copy()
 
         df_next_year = df[df['year'] == i+1]
-        for type in ['standard', 'ml']:
+        for type in ['standard', 'ml', 'ext']:
 
             df_base = base_dici[type]
 
