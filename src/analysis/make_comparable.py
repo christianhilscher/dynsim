@@ -1,17 +1,19 @@
 import numpy as np
 import pandas as pd
-import pathlib
-import os
+from pathlib import Path
+import sys
 
 
 ###############################################################################
-input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
+dir = Path.cwd().parent
+input_path = dir / "input"
+output_path = dir / "output"
+current_week = str(sys.argv[1])
 ###############################################################################
 
 # Loading data
-dici_full = pd.read_pickle(output_path + "doc_full.pkl")
-dici_est = pd.read_pickle(output_path + "doc_full2.pkl")
+dici_full = pd.read_pickle(output_path / "doc_full.pkl")
+dici_est = pd.read_pickle(output_path / "doc_full2.pkl")
 
 
 df_full_ml = dici_full["ml"]
@@ -98,9 +100,9 @@ def run_rightshape(current_week):
 ###############################################################################
 if __name__ == "__main__":
     # Specifying week for folder selection
-    current_week = "47"
-    output_week = output_path + "week" + current_week + "/"
-    pathlib.Path(output_week).mkdir(parents=True, exist_ok=True)
+    output_week = Path(output_path / ("week" + current_week))
+    output_week.mkdir(exist_ok=True, parents=True)
+    print(str(output_week))
 
 
     # Running functions
@@ -111,4 +113,6 @@ if __name__ == "__main__":
 
     #df_out = df_out[(df_out["age_real"]<60)&(df_out["age_real"]>29)]
     #df_out = first_year(df_out)
-    df_out.to_pickle(output_week + "df_analysis_full")
+    
+    loc = output_week / "df_analysis_full"
+    df_out.to_pickle(str(loc))

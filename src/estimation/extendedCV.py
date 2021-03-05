@@ -10,10 +10,10 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
-from estimation.standard import getdf, get_dependent_var
+from standard import getdf, get_dependent_var
 
 ###############################################################################
-dir = Path(__file__).parents[2]
+dir = Path(__file__).resolve().parents[2]
 input_path = dir / "input"
 model_path = dir / "src/estimation/models/"
 ###############################################################################
@@ -209,17 +209,18 @@ def _estimate(dataf, dep_var, type):
                   'verbose': 0,
                   'early_stopping_rounds': 5}
 
-    modl = lgb.train(params,
+    modl = lgb.cv(params,
                      train_set = dict['lgb_train'],
-                     valid_sets = dict['lgb_test'],
-                     feature_name = dict['features'])
+                     nfold=10,
+                     return_cvbooster=True)
 
     # Make directory if it doesn't exist yet
-    Path(model_path / dep_var).mkdir(parents=True, exist_ok=True)
-    modl.save_model(str(model_path / dep_var / "_extended.txt"))
+    # Path(model_path / dep_var).mkdir(parents=True, exist_ok=True)
+    # modl.save_model(str(model_path / dep_var / "_extended.txt"))
 
-    pickle.dump(dict['X_scaler'],
-                open(model_path / dep_var / "_X_scaler_multi", 'wb'))
+    # pickle.dump(dict['X_scaler'],
+    #             open(model_path / dep_var / "_X_scaler_multi", 'wb'))
+    return modl
 
 
 
@@ -230,5 +231,13 @@ if __name__ == "__main__":
     df1 = getdf(df)
 
     _estimate(df1, "employment_status", "multiclass")
-    _estimate(df1, "hours", "regression")
-    _estimate(df1, "gross_earnings", "regression")
+    # _estimate(df1, "hours", "regression")
+    # _estimate(df1, "gross_earnings", "regression")
+
+
+df = pd.read_pickle(input_path / 'merged').dropna()
+df1 = getdf(df)
+
+abc = _estimate(df1, "employment_status", "multiclass")
+
+abc["cvbooster"].boosters[1].feature_importance()

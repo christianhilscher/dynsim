@@ -14,7 +14,7 @@ estimation_path = dir / "estimation"
 model_path = dir / "estimation/models"
 
 from estimation.standard import getdf, data_retired, data_working, data_fulltime, data_hours, data_earnings
-from estimation.multic import data_general
+from estimation.extended import data_general
 
 
 """
@@ -105,7 +105,7 @@ def _ext(X, variable):
     if variable == "employment_status":
         # last argument is how to weigh prediction vs transition matrix
         # 1 is full weight on prediction, 0 is full weight on transition matrix
-        weighted_res = get_results(X, pred, 0.5)
+        weighted_res = get_results(X, pred, 0.25)
         predictions = draw_status(weighted_res)
 
     else:

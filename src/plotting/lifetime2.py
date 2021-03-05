@@ -20,14 +20,14 @@ def quick_analysis(dataf):
     print("Null Values:")
     print(dataf.apply(lambda x: sum(x.isnull()) / len(dataf)))
 ##############################################################################
-input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
-output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
-estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
-sim_path = "/Users/christianhilscher/desktop/dynsim/src/sim/"
+input_path = "/home/christian/dynasim/input/"
+model_path = "/home/christian/dynasim/src/estimation/models/"
+output_path = "/home/christian/dynasim/output/"
+estimation_path = "/home/christian/dynasim/src/estimation/"
+sim_path = "/home/christian/dynasim/src/sim/"
 
-current_week = "47"
-output_week = "/Users/christianhilscher/desktop/dynsim/output/week" + str(current_week) + "/"
+current_week = "51"
+output_week = "/home/christian/dynasim/output/week" + str(current_week) + "/"
 
 def make_cohort(dataf, birthyears):
     dataf = dataf.copy()

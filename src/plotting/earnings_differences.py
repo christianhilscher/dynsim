@@ -61,7 +61,7 @@ def plot_diff(dataf):
     # Adding lines
     p.line(x="period_ahead", y="25%", source=source,
            line_color="black", line_dash="solid", line_width=3,
-           legend_label = "25 percentile",)
+           legend_label = "25 percentile")
     p.line(x="period_ahead", y="50%", source=source,
            line_color="black", line_dash="dashed", line_width=3,
            legend_label = "50 percentile")
