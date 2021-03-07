@@ -33,10 +33,14 @@ def make_cohort(dataf):
 
 def _moving(dataf):
     dataf = dataf.copy()
+    
+    # Throwing child out of family home
+    # dataf.loc[dataf['age']==18, 'n_children'] -= 1
 
     hid_max = dataf['hid'].max()
     n_grownups = sum(dataf['age'] == 18)
 
+    # Giving him a new home and stating that it's not a child anymore.
     hids = np.arange((hid_max+1), (hid_max + n_grownups+1))
     dataf.loc[dataf['age'] == 18, 'hid'] = hids
     dataf.loc[dataf['age'] == 18, 'child'] = 0
