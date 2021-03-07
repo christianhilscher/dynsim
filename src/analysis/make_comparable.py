@@ -108,11 +108,18 @@ if __name__ == "__main__":
     # Running functions
     df_analysis = make_ana_df(dici_full, dici_est)
 
-    cohorts = np.arange(1945, 1955)
-    df_out = make_cohort(df_analysis, cohorts)
+    all_people = np.arange(1945, 2018)
+    cohort = np.arange(1945, 1955)
+    
+    df_full = make_cohort(df_analysis, all_people)
+    df_cohort = make_cohort(df_analysis, cohort)
 
     #df_out = df_out[(df_out["age_real"]<60)&(df_out["age_real"]>29)]
     #df_out = first_year(df_out)
     
-    loc = output_week / "df_analysis_full"
-    df_out.to_pickle(str(loc))
+    loc_full = output_week / "df_analysis_full"
+    loc_cohort = output_week / "df_analysis_cohort"
+    
+    df_full.to_pickle(str(loc_full))
+    df_cohort.to_pickle(str(loc_cohort))
+    

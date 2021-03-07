@@ -142,15 +142,16 @@ def plot_2c(dataf, str_path):
                                     "y_median": ll_median,
                                     "overall_mean": np.repeat(overall_mean, len(ll_mean))})
     
-    p=figure(title="Fraction of working years by length of observation")
+    p=figure(title="Fraction of working years by length of observation",
+             y_range=(0, 1))
     
     p.line(x="x", y="y_mean", source=source,
            line_color="black", line_dash="solid", line_width=3,
            legend_label = "mean")
     
-    p.line(x="x", y="y_median", source=source,
-        line_color="black", line_dash="dashed", line_width=3,
-        legend_label = "median")
+    # p.line(x="x", y="y_median", source=source,
+    #     line_color="black", line_dash="dashed", line_width=3,
+    #     legend_label = "median")
     
     p.line(x="x", y="overall_mean", source=source,
         line_color="red", line_dash="solid", line_width=2,
@@ -159,112 +160,11 @@ def plot_2c(dataf, str_path):
     p = make_pretty(p)
     export_png(p, filename=str(path/ str_path)) 
 
-# Log profile of wages
-def plot_log_wages(dataf):
-    dataf = dataf.copy()
-    
-    vars = ["gross_earnings_real",
-            "gross_earnings_standard",
-            "gross_earnings_ext"]
-
-    dataf[vars] = np.log(dataf[vars])
-
-    source = ColumnDataSource(dataf)
-    p = figure(title="Log earnings by age group")
-
-    p.line(x="age_real", y="gross_earnings_real", source=source,
-        line_color="black", line_dash="solid", line_width=3,
-        legend_label = "Real")
-
-    p.line(x="age_real", y="gross_earnings_standard", source=source,
-        line_color="black", line_dash="dashed", line_width=3,
-        legend_label = "Standard")
-
-    p.line(x="age_real", y="gross_earnings_ext", source=source,
-        line_color="black", line_dash="dotted", line_width=3,
-        legend_label = "Ext")
-
-    export_png(p, filename="plot.png")
-    
-def get_coeff(y, x):
-    y = y.values
-    x = x.values
-    
-    x = sm.add_constant(x)
-    
-    res = sm.OLS(y, x).fit()
-    
-    print(res.summary())
-    
-def get_log_var(dataf, var):
-    dataf = dataf.copy()
-    
-    dataf = dataf[dataf[var] != 0]
-    
-    dataf["log"] = np.log(dataf[var])
-    df_out = dataf.groupby("age_real").var()
-    df_out["n"] = dataf.groupby("age_real")["pid"].count()
-    
-    return df_out[["log", "n"]]
-    
-    
-##############################################################################
-df = pd.read_pickle(path / "df_analysis_full")
-
-##############################################################################
-# Quick look at sample
-# get_unemp(df)
-
-
-##############################################################################
-# Quick look at median gross earnings and hours by age group
-# Only for working people now
-
-dataf_rest=restrict(df)
-dataf_incomes=group_age(dataf_rest)
-
-
-dataf_incomes[["gross_earnings_real",
-              "gross_earnings_standard",
-              "gross_earnings_ext",
-              "n"]]
-
-dataf_incomes[["hours_real",
-              "hours_standard",
-              "hours_ext",
-              "n"]]
-
-
-##############################################################################
-# Plot of log wages
-
-# plot_log_wages(dataf_incomes)
-##############################################################################
-# Autocorrelations - Brenner T2
-
-dataf_rest1 = dataf_rest[np.isin(dataf_rest["age_real"], np.arange(42, 53))]
-
-vars = ["gross_earnings", "hours"]
-types = ["real", "standard", "ext"]
-
-
-v = vars[0]
-t = types[2]
-
-print("This are the results with approach:", t, " \n")
-
-variable = v + "_" + t
-variable_lag = v + "_t1_" + t
-
-# get_coeff(dataf_rest1[variable], 
-#           dataf_rest1[variable_lag])
-
-
-##############################################################################
-# Variance of log earnings - Kopczuk T1
-# abc = get_log_var(dataf_rest, variable)
 
 if __name__ == "__main__": 
+    df = pd.read_pickle(path / "df_analysis_cohort")
+    
+    
     plot_2c(df, "fig2c.png")
     plot_sample(df, "sample_duration.png")
     plot_sample(df, "sample_duration_working.png", rest=True)

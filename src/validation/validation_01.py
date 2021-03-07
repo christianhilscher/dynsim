@@ -11,13 +11,14 @@ from bokeh.models import ColumnDataSource
 from bokeh.io import export_png
 
 ###############################################################################
-# dir = Path(__file__).resolve().parents[2]
-# current_week = "week" + str(sys.argv[1])
+dir = Path(__file__).resolve().parents[2]
+current_week = "week" + str(sys.argv[1])
 
-# path = dir / "output" / current_week
-# path.mkdir(parents=True, exist_ok=True)
+path = dir / "output" / current_week
+path.mkdir(parents=True, exist_ok=True)
 
-df = pd.read_pickle("~/dynasim/output/week09/df_analysis_full")
+# path = Path("/home/christian/dynasim/output/week09/")
+# df = pd.read_pickle("~/dynasim/output/week09/df_analysis_cohort")
 ###############################################################################
 
 def var_by_method(dataf, variable):
@@ -62,45 +63,49 @@ def plot_by_age(dataf, variable):
            line_color="black", line_dash = "dotted", line_width=2,
            legend_label = "Ext")
     
-    show(p)
+    p.xaxis.axis_label = "Age"
+    
+    p = make_pretty(p)
+    str_path = variable + ".png"
+    export_png(p, filename=str(path/ str_path))
 
-df.columns.tolist()
+def make_pretty(p):
+    p.xgrid.grid_line_color = None
+    p.yaxis.minor_tick_line_width=0
+    p.xaxis.minor_tick_line_width=0
+    
+    # p.legend.location = "bottom_right"
+
+    return p  
 
 ##########
 
-df_child = var_by_method(df, "child")
-tmp = df_child.groupby("pid").max()
-sum(tmp["real"]==tmp["standard"])/len(tmp)
-sum(tmp["real"]==tmp["ext"])/len(tmp)
+# df_child = var_by_method(df, "child")
+# tmp = df_child.groupby("pid").max()
+# sum(tmp["real"]==tmp["standard"])/len(tmp)
+# sum(tmp["real"]==tmp["ext"])/len(tmp)
+# ##########
+
+# len(df["hid_real"].unique())
+# len(df["hid_standard"].unique())
+# len(df["hid_ext"].unique())
+# ##########
+
+# df_married = var_by_method(df, "married")
+# tmp = df_married.groupby("pid").max()
+# sum(tmp["real"]==tmp["standard"])/len(tmp)
+# sum(tmp["real"]==tmp["ext"])/len(tmp)
 ##########
 
-len(df["hid_real"].unique())
-len(df["hid_standard"].unique())
-len(df["hid_ext"].unique())
-##########
 
-df_married = var_by_method(df, "married")
-tmp = df_married.groupby("pid").max()
-sum(tmp["real"]==tmp["standard"])/len(tmp)
-sum(tmp["real"]==tmp["ext"])/len(tmp)
-##########
+if __name__ == "__main__":
+    
+    df = pd.read_pickle(path / "df_analysis_cohort")
 
-df.groupby("age_real")["n_people_real", 
-                       "n_people_standard",
-                       "n_people_ext"].mean()
-
-var_by_age(df, "n_children")
-
-plot_by_age(df, "n_children")
-
-np.unique(df["n_children_real"].values, return_counts=True)
-np.unique(df["n_children_standard"].values, return_counts=True)
-np.unique(df["n_children_ext"].values, return_counts=True)
-
-df["n_children_real"].sum()
-df["n_children_ext"].sum()
-
-
-a = 3
-a -= 1
-a
+    plot_by_age(df, "married")
+    plot_by_age(df, "in_couple")
+    plot_by_age(df, "hh_income")
+    plot_by_age(df, "hh_youngest_age")
+    plot_by_age(df, "n_people")
+    plot_by_age(df, "n_children")
+    plot_by_age(df, "hh_frac_working")
