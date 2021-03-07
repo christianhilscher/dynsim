@@ -27,7 +27,7 @@ from standard import getdf
 os.chdir(cwd)
 """
 ###############################################################################
-
+np.random.seed(2021)
 
 df = pd.read_pickle(input_path / 'merged').dropna()
 df1 = getdf(df)
