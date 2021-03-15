@@ -17,8 +17,7 @@ current_week = "week" + str(sys.argv[1])
 path = dir / "output" / current_week
 path.mkdir(parents=True, exist_ok=True)
 
-# path = Path("/home/christian/dynasim/output/week09/")
-# df = pd.read_pickle("~/dynasim/output/week09/df_analysis_cohort")
+
 ###############################################################################
 
 def var_by_method(dataf, variable):
