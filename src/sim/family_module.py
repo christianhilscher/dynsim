@@ -17,19 +17,7 @@ model_path = dir / "src/estimation/models"
 
 from estimation.standard import data_birth
 from estimation.extended import data_general
-"""
-##############################################################################
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
-estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
-sim_path = "/Users/christianhilscher/desktop/dynsim/src/sim/"
-input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
 
-os.chdir(estimation_path)
-from standard import data_birth
-from extended import data_general
-
-os.chdir(sim_path)
-"""
 ##############################################################################
 mortality = pd.read_csv(input_path / "mortality.csv")
 fertility = pd.read_csv(input_path / "fertility.csv")
@@ -212,7 +200,7 @@ def sim_birth(dataf, type):
         predictions = _ext(X, 'birth')
     elif type == 'standard':
         X = data_birth(dataf, estimate=0)
-        predictions = _ml(X, 'birth')
+        predictions = _logit(X, 'birth')
     else:
         X = data_birth(dataf, estimate=0)
         predictions = _ml(X, 'birth')
@@ -220,30 +208,30 @@ def sim_birth(dataf, type):
 
     return predictions
 
-def scale_data(dataf):
+def scale_data(dataf, dep_var=None, multi=0):
     dataf = dataf.copy()
+    if multi == 1:
 
-    X = StandardScaler().fit_transform(np.asarray(dataf))
-    scaler = 0
-    return X, scaler
+        scaler = pd.read_pickle(model_path / dep_var / "_X_scaler_multi")
+    else:
+        scaler = pd.read_pickle(model_path / str(dep_var + "_X_scaler"))
+    X = scaler.transform(np.asarray(dataf))
+    return X
 
-def make_new_humans(dataf):
+def make_new_humans(dataf, pid_max):
     """
     Takes the mother's values and adjust some of them accordingly (setting age=0 for example)
     """
-    dataf = dataf.copy()
-
-    df_babies = dataf[dataf['birth'] == 1].copy()
+    df_babies = dataf.copy()
     n_babies = len(df_babies)
-    pid_max = dataf['pid'].max()
 
     pids = np.arange((pid_max+1), (pid_max + n_babies+1))
-    df_babies['pid'] = pids
-    df_babies['child'] = 1
+    df_babies.loc[:, 'pid'] = pids
+    df_babies.loc[:, 'child'] = 1
 
     gender = np.random.randint(0, 2, size=len(df_babies))
-    df_babies['female'] = gender
-    df_babies['predicted'] = 1
+    df_babies.loc[:, 'female'] = gender
+    df_babies.loc[:, 'predicted'] = 1
 
     settozero = ['age',
                  'gross_earnings',
@@ -257,45 +245,57 @@ def make_new_humans(dataf):
                  'working',
                  'birth']
 
-    df_babies[settozero] = 0
+    df_babies.loc[:, settozero] = int(2)
     return df_babies, n_babies
 
-def birth(dataf):
+def birth(dataf, type):
     """
     Determines who gets children and then generates a new DF containing the old one plus the infants
     """
     dataf = dataf.copy()
 
-    df_possible = dataf[(dataf['female']==1) &  \
-                             (dataf['child']==0) & \
-                             (15 <= dataf['age']) & \
-                             (dataf['age'] <= 49)]
+    # This line takes the fertility table and uses it to determine births
+    
+    # df_possible = dataf[(dataf['female']==1) &  \
+    #                          (dataf['child']==0) & \
+    #                          (15 <= dataf['age']) & \
+    #                          (dataf['age'] <= 49)]
 
-    df_merged = df_possible.merge(fertility, left_on='age', right_on='Age')
+    # df_merged = df_possible.merge(fertility, left_on='age', right_on='Age')
 
-    probs = np.random.uniform(size=len(df_possible))
-    df_merged['birth'] = 0
+    # probs = np.random.uniform(size=len(df_possible))
+    # df_merged['birth'] = 0
 
-    cond = df_merged['1968']/1000 < probs
-    df_merged.loc[cond, 'birth']=1
-    df_merged.drop(['1968', 'Age'], axis=1, inplace=True)
+    # births = df_merged['1968']/1000 < probs
+    # df_merged.loc[cond, 'birth']=1
+    # df_merged.drop(['1968', 'Age'], axis=1, inplace=True)
 
-    dataf_babies = df_merged[df_merged['birth']==1]
-    births_this_period = sum(cond)
+    # # dataf_babies = df_merged[df_merged['birth']==1]
+    
+    births = sim_birth(dataf, type)
+    df_mothers = dataf[births==1]
+    df_nonmothers = dataf[births==0]
+    
+    df_mothers.loc[:, "birth"] = 1
+    births_this_period = sum(births)
+    
+    maxpid = dataf["pid"].max()
 
-    dataf_babies, births_this_period = make_new_humans(dataf)
+    dataf_babies, births_this_period = make_new_humans(df_mothers, maxpid)
 
-    dataf = pd.concat([dataf, dataf_babies], ignore_index=True)
+    dataf = pd.concat([df_nonmothers,
+                       df_mothers, 
+                       dataf_babies], ignore_index=True)
     return dataf, births_this_period
 
 
 
 def _logit(X, variable):
-    X= X.copy()
+    X = X.copy()
 
-    X_scaled = scale_data(X)
+    X_scaled = scale_data(X, variable)
     #X_scaled['const'] = 1
-    estimator  = pd.read_pickle(model_path + variable + "_logit")
+    estimator  = pd.read_pickle(model_path / str(variable + "_logit"))
     pred = estimator.predict(X_scaled)
 
     pred_scaled = np.zeros(len(pred))
@@ -306,21 +306,28 @@ def _logit(X, variable):
 def _ml(X, variable):
     X = X.copy()
 
-    X_scaled, scaler = scale_data(X)
-    estimator = lgb.Booster(model_file = model_path + variable + '_ml.txt')
+    X_scaled = scale_data(X, variable)
+    estimator = lgb.Booster(model_file = str(model_path / str(variable + '_ml.txt')))
     pred = estimator.predict(X_scaled)
 
-    pred_scaled = np.zeros(len(pred))
-    pred_scaled[pred>0.5] = 1
+    if variable in ['hours', 'gross_earnings']:
+        # pred_scaled = pred
+        # Inverse transform regression results
+        scaler = pd.read_pickle(model_path / str(variable + "_y_scaler"))
+        pred_scaled = scaler.inverse_transform(pred)
+    else:
+        # Make binary prediction to straight 0 and 1
+        pred_scaled = np.zeros(len(pred))
+        pred_scaled[pred>0.5] = 1
 
+    pred_scaled[pred_scaled<0] = 0
     return pred_scaled
 
 def _ext(X, variable):
     X = X.copy()
 
-    X_scaled, scaler = scale_data(X)
-    estimator = lgb.Booster(model_file = model_path + \
-                            variable + '_extended.txt')
+    X_scaled= scale_data(X, variable, multi=1)
+    estimator = lgb.Booster(model_file = str(model_path / variable / '_extended.txt'))
     pred = estimator.predict(X_scaled)
 
     pred_scaled = np.zeros(len(pred))

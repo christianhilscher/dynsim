@@ -16,22 +16,6 @@ model_path = dir / "estimation/models"
 from estimation.standard import getdf, data_retired, data_working, data_fulltime, data_hours, data_earnings
 from estimation.extended import data_general
 
-
-"""
-##############################################################################
-input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-model_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/models/"
-estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
-sim_path = "/Users/christianhilscher/desktop/dynsim/src/sim/"
-
-os.chdir(estimation_path)
-from standard import getdf, data_retired, data_working, data_fulltime, data_hours, data_earnings
-from multic import data_general
-os.chdir(sim_path)
-
-np.random.seed(2020)
-##############################################################################
-"""
 ##############################################################################
 
 # Functions used for predicting values
@@ -235,6 +219,7 @@ def sim_hours(dataf, type):
     if type == 'standard':
         X = data_hours(dataf, estimate=0)
         predictions = _ols(X, 'hours')
+        predictions[predictions>80] = 80
     elif type == 'ml':
         X = data_hours(dataf, estimate=0)
         predictions = _ml(X, 'hours')
@@ -268,6 +253,15 @@ def sim_multi_employment(dataf):
 
     X = data_general(dataf, "employment_status", estimate=0)
     predictions = _ext(X, "employment_status")
+    
+    control_list = np.arange(4).tolist()
+    control_cond = [a in control_list for a in predictions]
+    
+    predictions[~pd.Series(control_cond)] = 0
+    
+    # if sum(~pd.Series(control_cond))>0:
+    #     print("Happened ", sum(~pd.Series(control_cond)), " times")
+    #     print(predictions[~pd.Series(control_cond)])
 
     return predictions
 
@@ -323,7 +317,7 @@ def get_access(dataf):
 
     bins = np.arange(0, 101, 1)
     dataf["age_bin"] = pd.cut(dataf["age"], bins)
-    dataf["left"] = [str(bin.right) for bin in dataf["age_bin"]]
+    dataf["left"] = [str(binn.right) for binn in dataf["age_bin"]]
     dataf["left"] = dataf["left"]
 
     dataf["name"] = list(zip(dataf["sex"], dataf["left"]))
@@ -341,6 +335,7 @@ def get_name(itr):
     return sep.join(seq)
 
 def get_cond_prob(age_interval, employment_status, dici):
+    
     probs = dici[age_interval].iloc[0:4, int(employment_status)]
     marg_prob = dici[age_interval].iloc[-1, int(employment_status)]
 

@@ -63,7 +63,7 @@ def make_cohort(dataf, birthyears):
     condition = [by in birthyears for by in birthyear]
     dataf = dataf.loc[condition]
     # Only using data from western Germany for now
-    dataf = dataf[dataf["east"]==0]
+    # dataf = dataf[dataf["east"]==0]
 
     dataf_renamed = dataf.iloc[:,76:113].add_suffix("_standard")
     dataf = pd.concat([dataf.iloc[:,:76], dataf_renamed, dataf.iloc[:,113:]], axis=1)

@@ -13,7 +13,7 @@ from sklearn.linear_model import LogisticRegression, LinearRegression
 from estimation.standard import getdf, get_dependent_var
 
 ###############################################################################
-dir = Path(__file__).parents[2]
+dir = Path(__file__).resolve().parents[2]
 input_path = dir / "input"
 model_path = dir / "src/estimation/models/"
 ###############################################################################
@@ -229,6 +229,7 @@ if __name__ == "__main__":
     df = pd.read_pickle(input_path / 'merged').dropna()
     df1 = getdf(df)
 
+    _estimate(df1, "birth", "binary")
     _estimate(df1, "employment_status", "multiclass")
     _estimate(df1, "hours", "regression")
     _estimate(df1, "gross_earnings", "regression")

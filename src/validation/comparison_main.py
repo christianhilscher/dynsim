@@ -27,6 +27,7 @@ if __name__ == "__main__":
     plot_mean_by_age(df, m_list, "in_couple", path)
     plot_mean_by_age(df, m_list, "n_people", path)
     plot_mean_by_age(df, m_list, "n_children", path)
+    plot_mean_by_age(df, m_list, "birth", path)
     
     plot_lifetime(df, "real", path)
     plot_lifetime(df, "standard", path)

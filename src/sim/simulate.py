@@ -5,19 +5,7 @@ import pandas as pd
 
 from sim.family_module import separations, marriage, dating_market, birth, death
 from sim.work_module import sim_retired, sim_working, sim_fulltime, sim_hours, sim_earnings, scale_data, make_hh_vars, sim_multi_employment, to_binary, to_category
-"""
-sim_path = "/Users/christianhilscher/Desktop/dynsim/src/sim/"
-estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
-input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
 
-cwd = os.getcwd()
-##############################################################################
-os.chdir(sim_path)
-from family_module import separations, marriage, dating_market, birth, death
-from work_module import sim_retired, sim_working, sim_fulltime, sim_hours, sim_earnings, scale_data, make_hh_vars, sim_multi_employment, to_binary, to_category
-
-os.chdir(cwd)
-"""
 ##############################################################################
 def quick_analysis(dataf):
     print("Null Values:")
@@ -35,7 +23,7 @@ def _moving(dataf):
     dataf = dataf.copy()
     
     # Throwing child out of family home
-    # dataf.loc[dataf['age']==18, 'n_children'] -= 1
+    dataf.loc[dataf['age']==18, 'n_children'] -= 1
 
     hid_max = dataf['hid'].max()
     n_grownups = sum(dataf['age'] == 18)
@@ -104,15 +92,13 @@ def run_family_module(dataf, type):
     dataf, separations_this_period = separations(dataf)
     dataf, marriages_this_period = marriage(dataf)
     dataf, new_couples_this_period = dating_market(dataf)
-    dataf, births_this_period = birth(dataf)
+    dataf, births_this_period = birth(dataf, type)
 
     out_dici={'dataf' : dataf}
     return out_dici
 
 def run_work_module(dataf, type):
     dataf = dataf.copy()
-
-    dataf = _return_hh_vars(dataf)
 
     if type == "ext":
         empl = sim_multi_employment(dataf)

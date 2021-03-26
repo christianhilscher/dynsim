@@ -64,8 +64,13 @@ def restrict(dataf, working=False, female=None, max_age=None):
 def calc_autocorr(dici, variable):
     
     # Space for coefficients
-    age = np.sort(dici["real"]["age_real"].unique())
-    coeffs = np.empty(shape=(len(age), 3))
+    age = np.sort(dici["ext"]["age_real"].unique())
+    coeffs = np.empty(shape=(len(age), 4))
+    
+    # Overall coeff:
+    coef = get_coeff(dici["real"][variable + "_real"], 
+                     dici["real"][variable + "_t1_real"])
+    coeff_arr = np.repeat(coef, len(age))
     
     for (ind_t, method) in enumerate(["real", "standard", "ext"]):
         
@@ -73,6 +78,7 @@ def calc_autocorr(dici, variable):
         var = variable + "_" + method
         var_lag = variable + "_t1_" + method
         
+        age = np.sort(dici[method]["age_" + method].unique())
         # Calculate the coefficient for every age seperately
         for (ind_a, a) in enumerate(age):
             X = dataf_use.loc[dataf_use["age_" + method] == a, var_lag]
@@ -84,7 +90,8 @@ def calc_autocorr(dici, variable):
     df_out = pd.DataFrame(data={"age": age,
                                 "real": coeffs[:,0],
                                 "standard": coeffs[:,1],
-                                "ext": coeffs[:, 2]})
+                                "ext": coeffs[:, 2],
+                                "coef": coeff_arr})
     
     return df_out
 
@@ -118,6 +125,10 @@ def plot(dataf, long_title, short_title):
     p.line(x="age", y="ext", source=source,
            line_color="black", line_dash = "dotted", line_width=2,
            legend_label = "Ext")
+    
+    p.line(x="age", y="coef", source=source,
+        line_color="red", line_dash = "solid", line_width=2,
+        legend_label = "Real overall value")
     
     # Adding axis labels
     p.xaxis.axis_label="Age"

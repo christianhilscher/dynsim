@@ -356,6 +356,8 @@ def var_by_method_dici(dici, variable, group, measure):
             p50 = dici[m].groupby(group)[variable + "_" + m].quantile(0.5)
             p10 = dici[m].groupby(group)[variable + "_" + m].quantile(0.1)
             tmp[m] = p50/p10
+        elif measure == "gini":
+            tmp[m] = dici[m].groupby(group)[variable + "_" + m].agg(gini_coefficient)
             
     
     df_out = pd.DataFrame(tmp)
@@ -450,9 +452,15 @@ def wrap_inequality_year_plots(dataf, path):
     var = ["gross_earnings", "hours"]
     
     for v in var:
-        for m in ["p90p50", "p90p10", "p50p10"]:
+        for m in ["p90p50", "p90p10", "p50p10", "gini"]:
             
             plot_inequality_year(dataf, v, path, working=1, measure=m)
             plot_inequality_year(dataf, v, path, working=1, female=0,  measure=m)
             plot_inequality_year(dataf, v, path, working=1, female=1, measure=m)
-            
+   
+def gini_coefficient(x):
+    """Compute Gini coefficient of array of values"""
+    diffsum = 0
+    for i, xi in enumerate(x[:-1], 1):
+        diffsum += np.sum(np.abs(xi - x[i:]))
+    return diffsum / (len(x)**2 * np.mean(x))

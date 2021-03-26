@@ -11,7 +11,7 @@ import lightgbm as lgb
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
 ###############################################################################
-dir = Path(__file__).parents[2]
+dir = Path(__file__).resolve().parents[2]
 input_path = dir / "input"
 model_path = dir /"src/estimation/models/"
 ###############################################################################
@@ -201,7 +201,7 @@ def _add_constant(dataf):
 ##############################################################################
 def data_birth(dataf, estimate=1):
     dataf = dataf.copy()
-    dataf = dataf[(dataf['female']==1) & (dataf['child']==0)]
+    # dataf = dataf[(dataf['female']==1) & (dataf['child']==0)]
 
     if estimate == 1:
         dataf= get_dependent_var(dataf, 'birth')

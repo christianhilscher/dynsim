@@ -195,17 +195,50 @@ def _hh_age_youngest(dataf):
     dataf['hh_youngest_age'] = smallest_age
     return dataf
 
-def _indicate_birth(dataf):
-    """
-    Indictaes whether a mother has had a baby in that particular year
-    """
-
+def _make_motherpid(dataf):
     dataf = dataf.copy()
+    
+    # Mothers in cildbearing age
+    interv = np.arange(18, 50)
+    mother_cond = (df["female"]==1) & (df["age"].isin(interv))
+    child_cond = df["child"]==1
+    
 
-    minage = dataf.groupby(level=['year', 'hid'])['age'].min()
-    dataf["minage"] = minage
-    dataf["birth"] = 0
-    dataf.loc[(dataf["minage"]==0)&(dataf["female"]==1)&(dataf["child"]==0), "birth"] = 1
-    dataf.drop("minage", axis=1, inplace=True)
+    baby_df = dataf[mother_cond | child_cond]
+    rest_df = dataf[(~mother_cond) & (~child_cond)]
+    
+    
+    baby_hh = baby_df.groupby("pid")["hid"].median()
+    baby_df = pd.merge(baby_df, baby_hh, on="pid", suffixes=("_current", ""))
+    baby_df.drop("hid_current", axis=1, inplace=True)
 
-    return dataf
+    mother_pids = baby_df[baby_df["child"]==0].groupby("hid")["pid"].min()
+    merged = pd.merge(baby_df, mother_pids, on="hid", suffixes=("", "mother_pid"))
+
+    merged.loc[merged["child"]==1, "motherpid"] = merged.loc[merged["child"]==1, "pidmother_pid"]
+
+    merged.drop("pidmother_pid",axis=1, inplace=True)
+    
+    df_out = pd.concat([rest_df, merged])
+    return df_out
+
+
+def _indicate_births(dataf):
+    dataf = dataf.copy()
+    
+    df_motherpids = _make_motherpid(dataf)
+
+    tmp = df_motherpids[df_motherpids["motherpid"]!=0].groupby("pid")["year", "age", "motherpid"].min()
+
+    tmp["child_birthyear"] = tmp["year"] - tmp["age"]
+    tmp.reset_index(inplace=True, drop=True)
+
+    mother_birth_list = list(zip(tmp["motherpid"], tmp["child_birthyear"]))
+
+    df_motherpids["mother_pid"] = list(zip(df_motherpids["pid"], df_motherpids["year"]))
+
+    df_motherpids.loc[df_motherpids["mother_pid"].isin(mother_birth_list), "birth"] = 1
+    
+    df_motherpids.drop("mother_pid", axis=1, inplace=True)
+    
+    return df_motherpids

@@ -10,24 +10,9 @@ from estimation.standard import getdf
 dir = Path.cwd().parent
 input_path = dir / "input"
 output_path = dir / "output"
-"""
-cwd = os.getcwd()
-sim_path = "/Users/christianhilscher/Desktop/dynsim/src/sim/"
-estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
-input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-output_path = "/Users/christianhilscher/Desktop/dynsim/output/"
 
 ###############################################################################
-os.chdir(sim_path)
-from simulate import fill_dataf, predict
-
-os.chdir(estimation_path)
-from standard import getdf
-
-os.chdir(cwd)
-"""
-###############################################################################
-np.random.seed(2021)
+np.random.seed(2020)
 
 df = pd.read_pickle(input_path / 'merged').dropna()
 df1 = getdf(df)
