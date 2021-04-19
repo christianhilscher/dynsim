@@ -10,52 +10,93 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from sklearn.linear_model import LogisticRegression, LinearRegression
 
-from estimation.standard import getdf, get_dependent_var
+from estimation.standard import getdf
 
 ###############################################################################
 dir = Path(__file__).resolve().parents[2]
 input_path = dir / "input"
 model_path = dir / "src/estimation/models/"
 ###############################################################################
+# Read in and transfrom fertility data
+def scale_fertility():
+    
+    df_fertility = pd.read_csv(input_path / "fertility.csv")
+    df_fertility.rename(columns={"Age": "age",
+                                 "1968": "prob"},
+                        inplace=True)
+    
+    df_fertility["prob"] = df_fertility["prob"]/1000
+    return df_fertility
 
+# Features for estimating birth, includes age specific fertility and cumulative sum of kids 
+def birth_features(dataf):
+    
+    df_fert = scale_fertility()
+    
+    df_male = dataf[dataf["female"]==0]
+    df_female = dataf[dataf["female"]==1]
+
+    df_merged = pd.merge(df_female, df_fert, how="left", on="age")
+    dataf_out = pd.concat([df_merged, df_male], axis=0, join="outer")
+    dataf_out.fillna(0, inplace=True)
+
+
+    # dataf_out.sort_values(["pid", "year"], inplace=True)
+    # dataf_out["cum_births"] = dataf_out.groupby("pid")["birth"].apply(lambda x: x.cumsum())
+    
+    return dataf_out
+
+
+def make_features(dataf, birth):
+    dataf = dataf.copy()
+    
+    # Add birth features
+    if birth:
+        dataf = birth_features(dataf)
+    else:
+        pass
+    
+    # Adding hourly wages to estimation
+    periods = ["t1", "t2"]
+    for h in periods:
+        name = "hourly_wage_" + h
+        
+        dataf[name] = dataf["gross_earnings_" + h] / dataf["hours_" + h]
+        dataf[name].fillna(0, inplace=True)
+        dataf.loc[dataf["hours_" + h] == 0, name] = 0
+    
+    # Adding hours and gross earnings difference
+    for v in ["hours", "gross_earnings"]:
+        dataf["diff_"+v] = dataf[v + "_t1"] - dataf[v + "_t2"]
+    
+        
+    return dataf
 
 def data_general(dataf, dep_var, estimate=1):
     dataf = dataf.copy()
 
-
+    if dep_var == "birth":
+        dataf = make_features(dataf, True)
+    else:
+        dataf = make_features(dataf, False)
+    
     if estimate == 1:
         dataf.rename(columns={dep_var: 'dep_var'}, inplace=True)
     else:
         dataf.drop(dep_var, axis=1, inplace=True)
         dataf.drop('personweight', axis=1, inplace=True)
-
-    if dep_var == "employment_status":
-        vars_drop = ["pid",
-                     "hid",
-                     "orighid",
-                     "age_max",
-                     "predicted",
-                     "hhweigth",
-                     "retired",
-                     "working",
-                     "fulltime",
-                     "hours",
-                     "gross_earnings"]
+        
+    vars_drop = ["pid", "hid", "orighid", "age_max", "predicted", "motherpid", "hhweight"]
+    
+    # Excluding variables which are determined later
+    if dep_var == "birth":
+        vars_drop += ["employment_status", "lfs", "retired", "working", "fulltime", "hours", "gross_earnings", "hh_income"]
+    elif dep_var == "employment_status":
+        vars_drop += ["lfs", "retired", "working", "fulltime", "hours", "gross_earnings", "hh_income"]
     elif dep_var == "hours":
-        vars_drop = ["pid",
-                     "hid",
-                     "orighid",
-                     "age_max",
-                     "predicted",
-                     "hhweigth",
-                     "gross_earnings"]
-    else:
-        vars_drop = ["pid",
-                     "hid",
-                     "orighid",
-                     "age_max",
-                     "predicted",
-                     "hhweigth"]
+        vars_drop += ["gross_earnings", "hh_income"]
+    elif dep_var == "gross_earnings":
+        vars_drop += ["hh_income"]
 
     for var in vars_drop:
         if var in dataf.columns.tolist():
@@ -68,10 +109,13 @@ def data_general(dataf, dep_var, estimate=1):
 def _prepare_classifier(dataf):
     dataf = dataf.copy()
 
-    y = dataf['dep_var']
-    X = dataf.drop('dep_var', axis=1)
+    train, test = train_test_split(dataf, test_size = 0.35, stratify = dataf["dep_var"])
+    
+    X_train = train.drop("dep_var", axis=1)
+    X_test = test.drop("dep_var", axis=1)
+    y_train = train["dep_var"]
+    y_test = test["dep_var"]
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.05)
 
     # Making weights
     weights_train = X_train['personweight']
@@ -82,7 +126,7 @@ def _prepare_classifier(dataf):
     X_test.drop('personweight', axis=1, inplace=True)
 
 
-    if "personweight_interacted" in X.columns.tolist():
+    if "personweight_interacted" in X_train.columns.tolist():
         X_train.drop('personweight_interacted', axis=1, inplace=True)
         X_test.drop('personweight_interacted', axis=1, inplace=True)
     else:
@@ -122,7 +166,7 @@ def _prepare_regressor(dataf, dep_var):
 
     y = dataf['dep_var']
     X = dataf.drop('dep_var', axis=1)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.05)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.35)
 
     # Making weights
     weights_train = X_train['personweight']

@@ -67,7 +67,12 @@ def _prepare_classifier(dataf):
     y = dataf['dep_var']
     X = dataf.drop('dep_var', axis=1)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.05)
+    train, test = train_test_split(dataf, test_size = 0.35, stratify = dataf["dep_var"])
+    
+    X_train = train.drop("dep_var", axis=1)
+    X_test = test.drop("dep_var", axis=1)
+    y_train = train["dep_var"]
+    y_test = test["dep_var"]
 
     # Making weights
     weights_train = X_train['personweight']

@@ -20,9 +20,18 @@ from estimation.extended import data_general
 
 ##############################################################################
 mortality = pd.read_csv(input_path / "mortality.csv")
-fertility = pd.read_csv(input_path / "fertility.csv")
+# fertility = pd.read_csv(input_path / "fertility.csv")
 ##############################################################################
-
+# Read in and transfrom fertility data
+def scale_fertility():
+    
+    df_fertility = pd.read_csv(input_path / "fertility.csv")
+    df_fertility.rename(columns={"Age": "age",
+                                 "1968": "prob"},
+                        inplace=True)
+    
+    df_fertility["prob"] = (df_fertility["prob"]/1000)
+    return df_fertility
 
 def death(dataf):
     dataf = dataf.copy()
@@ -231,7 +240,7 @@ def make_new_humans(dataf, pid_max):
 
     gender = np.random.randint(0, 2, size=len(df_babies))
     df_babies.loc[:, 'female'] = gender
-    df_babies.loc[:, 'predicted'] = 1
+    df_babies.loc[:, 'predicted'] = np.ones(len(df_babies))
 
     settozero = ['age',
                  'gross_earnings',
@@ -245,10 +254,61 @@ def make_new_humans(dataf, pid_max):
                  'working',
                  'birth']
 
-    df_babies.loc[:, settozero] = int(2)
-    return df_babies, n_babies
+    df_babies.loc[:, settozero] = int(0)
+    # Otherwise bin approach from hours does not work
+    df_babies.loc[:, "age"] = int(2)
+    return df_babies
 
 def birth(dataf, type):
+    
+    # Putting birth probabilities into dataframe
+    dataf = dataf.copy()
+    df_fertility = scale_fertility()
+    
+    df_male = dataf[dataf["female"]==0]
+    df_female = dataf[dataf["female"]==1]
+
+    df_merged = pd.merge(df_female, df_fertility, how="left", on="age")
+    dataf_tmp = pd.concat([df_merged, df_male], axis=0, join="outer")
+    dataf_tmp.fillna(0, inplace=True)
+    
+    # Drawing from random uniform to determine who gives birth
+    probs = dataf_tmp["prob"].to_numpy()
+    births = (probs > np.random.uniform(size=probs.shape)).astype(int)
+    
+    df_mothers = dataf_tmp[births==1]
+    df_nonmothers = dataf_tmp[births==0]
+    
+    df_mothers.loc[:, "birth"] = 1
+    births_this_period = sum(births)
+    
+    maxpid = dataf["pid"].max()
+
+    dataf_babies = make_new_humans(df_mothers, maxpid)
+
+    dataf_tmp = pd.concat([df_nonmothers,
+                       df_mothers, 
+                       dataf_babies], ignore_index=True)
+    
+    dataf_out = adapt_hh_measures(dataf_tmp)
+    
+    dataf_out.drop("prob", axis=1, inplace=True)
+    return dataf_out, births_this_period
+    
+    
+def adapt_hh_measures(dataf):
+    dataf = dataf.copy()
+    
+    birth_hh = dataf.loc[dataf["birth"]==1, "hid"].unique()
+    cond = [hh in birth_hh for hh in dataf["hid"]]
+    
+    dataf.loc[cond, "hh_youngest_age"] = 0
+    dataf.loc[cond, "n_people"] += 1
+    dataf.loc[cond, "n_people"] += 1
+    
+    return dataf
+
+def birth_dep(dataf, type):
     """
     Determines who gets children and then generates a new DF containing the old one plus the infants
     """
@@ -286,7 +346,10 @@ def birth(dataf, type):
     dataf = pd.concat([df_nonmothers,
                        df_mothers, 
                        dataf_babies], ignore_index=True)
-    return dataf, births_this_period
+    
+    dataf_out = adapt_hh_measures(dataf)
+    
+    return dataf_out, births_this_period
 
 
 

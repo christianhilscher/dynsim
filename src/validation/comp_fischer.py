@@ -62,10 +62,14 @@ def restrict(dataf, working=False, female=None, max_age=None):
     return out_dici
 
 def calc_autocorr(dici, variable):
-    
+
     # Space for coefficients
-    age = np.sort(dici["ext"]["age_real"].unique())
-    coeffs = np.empty(shape=(len(age), 4))
+    
+    # age = np.sort(dici["standard"]["age_standard"].unique())
+    age = np.arange(dici["real"]["age_real"].min(),
+                    dici["real"]["age_real"].max()+1)
+    
+    coeffs = np.zeros(shape=(len(age), 4))
     
     # Overall coeff:
     coef = get_coeff(dici["real"][variable + "_real"], 
@@ -78,7 +82,7 @@ def calc_autocorr(dici, variable):
         var = variable + "_" + method
         var_lag = variable + "_t1_" + method
         
-        age = np.sort(dici[method]["age_" + method].unique())
+        # age_method = np.sort(dici[method]["age_" + method].unique())
         # Calculate the coefficient for every age seperately
         for (ind_a, a) in enumerate(age):
             X = dataf_use.loc[dataf_use["age_" + method] == a, var_lag]
@@ -104,7 +108,7 @@ def get_coeff(y, x):
     
     res = sm.OLS(y, x).fit()
     
-    return res.params[1]
+    return res.params[-1]
 
 def plot(dataf, long_title, short_title):
     
@@ -175,7 +179,7 @@ def plot_wrapper(dataf, variable, working=False, female=None, max_age=None):
 ##############################################################################
 
 if __name__ == "__main__":
-    df = pd.read_pickle(path / "df_analysis_full")
+    df = pd.read_pickle(path / "df_analysis_cohort")
 
     # Earnings
     plot_wrapper(df, "gross_earnings", working=True, max_age=65)

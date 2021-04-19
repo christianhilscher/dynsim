@@ -86,7 +86,8 @@ def plot_mean_by_age(dataf, m_list, variable, path):
     fig_title = variable
     file_title = variable + ".png"
     
-    plot_age(df_plot, fig_title, file_title, path)
+    return df_plot
+    # plot_age(df_plot, fig_title, file_title, path)
 
 
 def make_pretty(p):
@@ -379,24 +380,24 @@ def plot_income_age(dataf, variable, path, working=None, female=None, fulltime=N
 def wrap_income_age_plots(dataf, path):
     
     dataf = dataf.copy()
-    var = "gross_earnings"
-    
-    for m in ["mean", "median"]:
+    variables = ["gross_earnings", "hours"]
+    for var in variables:
+        for m in ["mean", "median"]:
 
-        # All people
-        plot_income_age(dataf, var, path=path, measure=m)
-        plot_income_age(dataf, var, path=path, female=0, measure=m)
-        plot_income_age(dataf, var, path=path, female=1, measure=m)
-        
-        # Conditional on working
-        plot_income_age(dataf, var, path=path, working=1, measure=m)
-        plot_income_age(dataf, var, path=path, working=1, female=0, measure=m)
-        plot_income_age(dataf, var, path=path, working=1, female=1, measure=m)
-        
-        # Conditional on fulltime
-        plot_income_age(dataf, var, path=path, fulltime=1, measure=m)
-        plot_income_age(dataf, var, path=path, fulltime=1, female=0, measure=m)
-        plot_income_age(dataf, var, path=path, fulltime=1, female=1, measure=m)
+            # All people
+            plot_income_age(dataf, var, path=path, measure=m)
+            plot_income_age(dataf, var, path=path, female=0, measure=m)
+            plot_income_age(dataf, var, path=path, female=1, measure=m)
+            
+            # Conditional on working
+            plot_income_age(dataf, var, path=path, working=1, measure=m)
+            plot_income_age(dataf, var, path=path, working=1, female=0, measure=m)
+            plot_income_age(dataf, var, path=path, working=1, female=1, measure=m)
+            
+            # Conditional on fulltime
+            plot_income_age(dataf, var, path=path, fulltime=1, measure=m)
+            plot_income_age(dataf, var, path=path, fulltime=1, female=0, measure=m)
+            plot_income_age(dataf, var, path=path, fulltime=1, female=1, measure=m)
     
 def plot_income_year(dataf, variable, path, working=None, female=None, fulltime=None, measure="mean"):
     
@@ -414,24 +415,24 @@ def plot_income_year(dataf, variable, path, working=None, female=None, fulltime=
 def wrap_income_year_plots(dataf, path):
     
     dataf = dataf.copy()
-    var = "gross_earnings"
-    
-    for m in ["mean", "median"]:
-        
-        # All people
-        plot_income_year(dataf, var, path=path, measure=m)
-        plot_income_year(dataf, var, path=path, female=0, measure=m)
-        plot_income_year(dataf, var, path=path, female=1, measure=m)
-        
-        # Conditional on working
-        plot_income_year(dataf, var, path=path, working=1, measure=m)
-        plot_income_year(dataf, var, path=path, working=1, female=0, measure=m)
-        plot_income_year(dataf, var, path=path, working=1, female=1, measure=m)
-        
-        # Conditional on fulltime
-        plot_income_year(dataf, var, path=path, fulltime=1, measure=m)
-        plot_income_year(dataf, var, path=path, fulltime=1, female=0, measure=m)
-        plot_income_year(dataf, var, path=path, fulltime=1, female=1, measure=m)
+    variables = ["gross_earnings", "hours"]
+    for var in variables:
+        for m in ["mean", "median"]:
+            
+            # All people
+            plot_income_year(dataf, var, path=path, measure=m)
+            plot_income_year(dataf, var, path=path, female=0, measure=m)
+            plot_income_year(dataf, var, path=path, female=1, measure=m)
+            
+            # Conditional on working
+            plot_income_year(dataf, var, path=path, working=1, measure=m)
+            plot_income_year(dataf, var, path=path, working=1, female=0, measure=m)
+            plot_income_year(dataf, var, path=path, working=1, female=1, measure=m)
+            
+            # Conditional on fulltime
+            plot_income_year(dataf, var, path=path, fulltime=1, measure=m)
+            plot_income_year(dataf, var, path=path, fulltime=1, female=0, measure=m)
+            plot_income_year(dataf, var, path=path, fulltime=1, female=1, measure=m)
         
 def plot_inequality_year(dataf, variable, path, working=None, female=None, fulltime=None, measure="mean"):
     

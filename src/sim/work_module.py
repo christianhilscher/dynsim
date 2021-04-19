@@ -121,7 +121,7 @@ def _hh_income(dataf):
 
 def _hh_size(dataf):
     dataf = dataf.copy()
-    size = dataf.groupby('hid')['gross_earnings'].size()
+    size = dataf.groupby('hid')['child'].size()
     dataf['n_people'] = size
     return dataf
 

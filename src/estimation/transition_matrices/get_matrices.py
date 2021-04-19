@@ -2,10 +2,12 @@ import numpy as np
 import pandas as pd
 import pickle
 import os, pathlib
+from pathlib import Path
 
 ##############################################################################
-input_path = "/Users/christianhilscher/Desktop/dynsim/input/"
-estimation_path = "/Users/christianhilscher/desktop/dynsim/src/estimation/"
+dir = Path(__file__).resolve().parents[3]
+input_path = dir / "input"
+estimation_path = dir / "src/estimation/"
 ##############################################################################
 # Getting dataframe into right shape
 def getdf(dataf):
@@ -125,7 +127,7 @@ def make_cohort(dataf, birthyears):
 if __name__ == "__main__":
 
     # Read in data
-    df = pd.read_pickle(input_path + "merged")
+    df = pd.read_pickle(input_path / "merged")
     df1 = getdf(df)
     # Get matrices for whole sample
     trans_matrices = write_matrices(df1)
