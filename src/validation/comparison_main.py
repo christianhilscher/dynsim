@@ -29,11 +29,11 @@ if __name__ == "__main__":
     plot_mean_by_age(df, m_list, "n_children", path)
     plot_mean_by_age(df, m_list, "birth", path)
     
-    plot_lifetime(df, "real", path)
-    plot_lifetime(df, "standard", path)
-    plot_lifetime(df, "ext", path)
+    # plot_lifetime(df, "real", path)
+    # plot_lifetime(df, "standard", path)
+    # plot_lifetime(df, "ext", path)
     
-    wrap_employment_plots(df, path)
-    wrap_income_age_plots(df, path)
-    wrap_income_year_plots(df, path)
-    wrap_inequality_year_plots(df, path)
+    # wrap_employment_plots(df, path)
+    # wrap_income_age_plots(df, path)
+    # wrap_income_year_plots(df, path)
+    # wrap_inequality_year_plots(df, path)

@@ -86,8 +86,8 @@ def plot_mean_by_age(dataf, m_list, variable, path):
     fig_title = variable
     file_title = variable + ".png"
     
-    return df_plot
-    # plot_age(df_plot, fig_title, file_title, path)
+    # return df_plot
+    plot_age(df_plot, fig_title, file_title, path)
 
 
 def make_pretty(p):

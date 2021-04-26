@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from pathlib import Path
 import os
 import pickle
 
@@ -14,14 +15,24 @@ def quick_analysis(dataf):
     print("Null Values:")
     print(dataf.apply(lambda x: sum(x.isnull()) / len(dataf)))
 ##############################################################################
-dir = "/Users/christianhilscher/Desktop/dynsim"
-input_path = dir + "/input/"
-working_dir = dir + "/src/data_preparation"
+dir = Path(__file__).resolve().parents[2]
+
+input_path = dir / "input/"
+working_dir = dir / "src/data_preparation"
 
 os.chdir(working_dir)
 from cleaning import SOEP_to_df
-from data_prep import SOEP_to_df_old
+from data_prep import SOEP_to_df_old, indicate_births
 
+
+def n_children(dataf):
+    dataf = dataf.copy()
+    dataf.drop("n_children", axis=1,inplace=True)
+    df_nchildren = dataf.groupby(["hid", "year"], as_index=False)["child"].sum()
+    df_nchildren.rename(columns={"child" : "n_children"}, inplace=True)
+
+    df_out = pd.merge(dataf, df_nchildren, on = ["hid", "year"])
+    return df_out
 
 def make_hh_vars(dataf):
     """
@@ -29,7 +40,9 @@ def make_hh_vars(dataf):
     """
     dataf = dataf.copy()
     dataf = _get_multiindex(dataf)
-    dataf = _indicate_birth(dataf)
+    # dataf = _indicate_birth(dataf)
+    dataf = indicate_births(dataf)
+    dataf = n_children(dataf)
     dataf.reset_index(inplace=True, drop=True)
     return dataf
 
@@ -106,12 +119,13 @@ def to_binary(dataf):
 
 
 # Making new dataset from original SOEP
-df_pgen = pd.read_stata("/Volumes/B/soep.v35/STATA_DEEN_v35/Stata/pgen.dta")
-df_hgen = pd.read_stata("/Volumes/B/soep.v35/STATA_DEEN_v35/Stata/hgen.dta")
-df_ppathl = pd.read_stata("/Volumes/B/soep.v35/STATA_DEEN_v35/Stata/ppathl.dta")
-df_hpathl = pd.read_stata("/Volumes/B/soep.v35/STATA_DEEN_v35/Stata/hpathl.dta")
-df_hbrutto = pd.read_stata("/Volumes/B/soep.v35/STATA_DEEN_v35/Stata/hbrutto.dta")
-df_pkal = pd.read_stata("/Volumes/B/soep.v35/STATA_DEEN_v35/Stata/pkal.dta")
+STATA_path = Path("~/STATA/soep.v35/STATA_DEEN_v35/Stata")
+df_pgen = pd.read_stata(STATA_path / "pgen.dta")
+df_hgen = pd.read_stata(STATA_path / "hgen.dta")
+df_ppathl = pd.read_stata(STATA_path / "ppathl.dta")
+df_hpathl = pd.read_stata(STATA_path / "hpathl.dta")
+df_hbrutto = pd.read_stata(STATA_path / "hbrutto.dta")
+df_pkal = pd.read_stata(STATA_path / "pkal.dta")
 
 
 df_pgen = df_pgen[["hid", "pid" , "syear", "pglabgro", "pgemplst", "pglfs", "pgtatzeit", "pgerwzeit", "pgpsbil", "pgfamstd"]]
@@ -143,12 +157,11 @@ try1.drop("bruttokaltmiete", axis=1, inplace=True)
 names_list = try1.columns.tolist()
 
 # Reading in old dataset
-old_df = pd.read_pickle("/Users/christianhilscher/Desktop/dynsim/input/old/full")
+old_df = pd.read_pickle(str(input_path / "old/full"))
 orig_df = SOEP_to_df_old(old_df)
 
 
 finish = pd.merge(try1, orig_df, on=["pid", "year"], how="outer")
-orig_df.shape
 
 finish.loc[finish["retired"].isna(), "retired"] = "[2] Nein"
 
@@ -172,10 +185,11 @@ names_list.append("retired")
 names_list
 finish_small = finish[names_list]
 finish_final = make_hh_vars(finish_small)
+# finish_final = n_children(finish_small)
 finish_final = finish_final[finish_final["age"]<99]
 finish_final = to_binary(finish_final)
-finish_final.dropna().to_pickle(input_path + "merged")
+finish_final.dropna().to_pickle(input_path / "merged")
 
 
 cond = [age in np.arange(16, 66) for age in finish_final["age"]]
-finish_final[cond].dropna().to_pickle(input_path + "workingage")
+finish_final[cond].dropna().to_pickle(input_path / "workingage")

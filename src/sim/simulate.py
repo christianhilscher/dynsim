@@ -93,6 +93,7 @@ def run_family_module(dataf, type):
     dataf, marriages_this_period = marriage(dataf)
     dataf, new_couples_this_period = dating_market(dataf)
     dataf, births_this_period = birth(dataf, type)
+    dataf = _return_hh_vars(dataf)
 
     out_dici={'dataf' : dataf}
     return out_dici

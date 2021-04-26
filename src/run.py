@@ -7,7 +7,7 @@ import pickle
 from sim.simulate import fill_dataf, predict
 from estimation.standard import getdf
 
-dir = Path.cwd().parent
+dir = Path.cwd().resolve().parent
 input_path = dir / "input"
 output_path = dir / "output"
 

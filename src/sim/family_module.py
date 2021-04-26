@@ -43,7 +43,9 @@ def death(dataf):
         dataf = dataf.loc[dataf['deaths']==0,:]
     else:
         death_count = 0
+        
     dataf.drop('deaths', axis=1, inplace=True)
+    
     return dataf, death_count
 
 
@@ -173,6 +175,8 @@ def separations(dataf):
     probability = np.random.uniform(0, 1, len(dataf))
     condition_married = (dataf['married'] == 1) & (probability<0.01)
     condition_incouple = (dataf['in_couple'] == 1) & (dataf['married'] == 0) & (probability<0.02)
+    # condition_married = (dataf['married'] == 1) & (probability<0.02)
+    # condition_incouple = (dataf['in_couple'] == 1) & (dataf['married'] == 0) & (probability<0.04)
     condition_separation = (condition_married | condition_incouple)
 
     males = (condition_separation) & (dataf['female'] == 0)
@@ -304,7 +308,7 @@ def adapt_hh_measures(dataf):
     
     dataf.loc[cond, "hh_youngest_age"] = 0
     dataf.loc[cond, "n_people"] += 1
-    dataf.loc[cond, "n_people"] += 1
+    dataf.loc[cond, "n_children"] += 1
     
     return dataf
 
