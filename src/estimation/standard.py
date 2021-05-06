@@ -15,6 +15,61 @@ dir = Path(__file__).resolve().parents[2]
 input_path = dir / "input"
 model_path = dir /"src/estimation/models/"
 ###############################################################################
+# Read in and transfrom fertility data
+def scale_fertility():
+    
+    df_fertility = pd.read_csv(input_path / "fertility.csv")
+    df_fertility.rename(columns={"Age": "age",
+                                 "1968": "prob"},
+                        inplace=True)
+    
+    df_fertility["prob"] = df_fertility["prob"]/1000
+    return df_fertility
+
+# Features for estimating birth, includes age specific fertility and cumulative sum of kids 
+def birth_features(dataf):
+    
+    df_fert = scale_fertility()
+    
+    df_male = dataf[dataf["female"]==0]
+    df_female = dataf[dataf["female"]==1]
+
+    df_merged = pd.merge(df_female, df_fert, how="left", on="age")
+    dataf_out = pd.concat([df_merged, df_male], axis=0, join="outer")
+    dataf_out.fillna(0, inplace=True)
+
+
+    # dataf_out.sort_values(["pid", "year"], inplace=True)
+    # dataf_out["cum_births"] = dataf_out.groupby("pid")["birth"].apply(lambda x: x.cumsum())
+    
+    return dataf_out
+
+
+def make_features(dataf, birth):
+    dataf = dataf.copy()
+    
+    # Add birth features
+    if birth:
+        dataf = birth_features(dataf)
+    else:
+        pass
+    
+    # Adding hourly wages to estimation
+    periods = ["t1", "t2"]
+    for h in periods:
+        name = "hourly_wage_" + h
+        
+        dataf[name] = dataf["gross_earnings_" + h] / dataf["hours_" + h]
+        dataf[name].fillna(0, inplace=True)
+        dataf.loc[dataf["hours_" + h] == 0, name] = 0
+    
+    # Adding hours and gross earnings difference
+    for v in ["hours", "gross_earnings"]:
+        dataf["diff_"+v] = dataf[v + "_t1"] - dataf[v + "_t2"]
+    
+        
+    return dataf
+
 
 # Getting dataframe into right shape
 def getdf(dataf):
@@ -207,6 +262,7 @@ def _add_constant(dataf):
 def data_birth(dataf, estimate=1):
     dataf = dataf.copy()
     # dataf = dataf[(dataf['female']==1) & (dataf['child']==0)]
+    dataf = make_features(dataf, True)
 
     if estimate == 1:
         dataf= get_dependent_var(dataf, 'birth')
@@ -267,6 +323,7 @@ def estimate_birth(dataf):
 
 def data_retired(dataf, estimate=1):
     dataf = dataf.copy()
+    dataf = make_features(dataf, False)
 
     if estimate == 1:
         dataf= get_dependent_var(dataf, 'retired')
@@ -324,6 +381,7 @@ def estimate_retired(dataf):
 def data_working(dataf, estimate=1):
     dataf = dataf.copy()
     dataf = dataf[dataf['retired']==0]
+    dataf = make_features(dataf, False)
 
 
     if estimate == 1:
@@ -392,6 +450,7 @@ def estimate_working(dataf):
 def data_fulltime(dataf, estimate=1):
     dataf = dataf.copy()
     dataf = dataf[dataf['working']==1]
+    dataf = make_features(dataf, False)
 
 
     if estimate == 1:
@@ -459,6 +518,7 @@ def estimate_fulltime(dataf):
 def data_hours(dataf, estimate=1):
     dataf = dataf.copy()
     dataf = dataf[dataf['working']==1]
+    dataf = make_features(dataf, False)
 
 
     if estimate == 1:
@@ -535,6 +595,7 @@ def estimate_hours(dataf):
 def data_earnings(dataf, estimate=1):
     dataf = dataf.copy()
     dataf = dataf[dataf['working']==1]
+    dataf = make_features(dataf, False)
 
 
     if estimate == 1:

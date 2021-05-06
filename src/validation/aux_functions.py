@@ -86,7 +86,7 @@ def plot_mean_by_age(dataf, m_list, variable, path):
     fig_title = variable
     file_title = variable + ".png"
     
-    # return df_plot
+    # return df
     plot_age(df_plot, fig_title, file_title, path)
 
 
@@ -465,3 +465,32 @@ def gini_coefficient(x):
     for i, xi in enumerate(x[:-1], 1):
         diffsum += np.sum(np.abs(xi - x[i:]))
     return diffsum / (len(x)**2 * np.mean(x))
+
+def make_quantile(dataf, var, m_list, q):
+    dataf = dataf.copy()
+    
+    for m in m_list:
+        variable = var + "_" + m
+        real_q = dataf.groupby(["year"])[variable].quantile(q).to_frame()
+        real_q.rename(columns={variable: "var"}, inplace=True)
+        
+        dataf = pd.merge(dataf, real_q, how="left", on="year")
+        dataf.loc[dataf[variable]>dataf["var"], variable] = dataf["var"]
+        dataf.drop("var", axis=1, inplace=True)
+    
+    return dataf
+
+def cap_outliers(dataf, m_list):
+    dataf = dataf.copy()
+
+    # # Hours
+    # dataf = make_quantile(dataf, "hours", m_list, 0.99)
+    # dataf = make_quantile(dataf, "hours_t1", m_list, 0.99)
+    # dataf = make_quantile(dataf, "hours_t2", m_list, 0.99)
+    
+    # Gross earnings
+    dataf = make_quantile(dataf, "gross_earnings", m_list, 0.95)
+    dataf = make_quantile(dataf, "gross_earnings_t1", m_list, 0.95)
+    dataf = make_quantile(dataf, "gross_earnings_t2", m_list, 0.95)
+    
+    return dataf

@@ -10,6 +10,7 @@ from bokeh.plotting import figure, show
 from bokeh.models import ColumnDataSource
 from bokeh.io import export_png
 
+from aux_functions import cap_outliers
 ###############################################################################
 dir = Path(__file__).resolve().parents[2]
 current_week = "week" + str(sys.argv[1])
@@ -179,7 +180,11 @@ def plot_wrapper(dataf, variable, working=False, female=None, max_age=None):
 ##############################################################################
 
 if __name__ == "__main__":
-    df = pd.read_pickle(path / "df_analysis_cohort")
+    df = pd.read_pickle(path / "df_analysis_full")
+    
+    m_list = ["real", "standard", "ext"]
+    df = cap_outliers(df, m_list)
+    df = df[df["age_real"]<66]
 
     # Earnings
     plot_wrapper(df, "gross_earnings", working=True, max_age=65)
