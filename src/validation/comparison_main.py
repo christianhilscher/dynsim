@@ -19,7 +19,7 @@ path.mkdir(parents=True, exist_ok=True)
 ###############################################################################
 if __name__ == "__main__":
     
-    df = pd.read_pickle(path / "df_analysis_full")
+    df = pd.read_pickle(path / "df_analysis_cohort")
     
     m_list = ["real", "standard", "ext"]
     

@@ -180,7 +180,7 @@ def plot_wrapper(dataf, variable, working=False, female=None, max_age=None):
 ##############################################################################
 
 if __name__ == "__main__":
-    df = pd.read_pickle(path / "df_analysis_full")
+    df = pd.read_pickle(path / "df_analysis_cohort")
     
     m_list = ["real", "standard", "ext"]
     df = cap_outliers(df, m_list)

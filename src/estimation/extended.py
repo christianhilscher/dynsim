@@ -106,7 +106,7 @@ def data_general(dataf, dep_var, estimate=1):
 
     return dataf
 
-def _prepare_classifier(dataf):
+def prepare_classifier(dataf):
     dataf = dataf.copy()
 
     train, test = train_test_split(dataf, test_size = 0.35, stratify = dataf["dep_var"])
@@ -161,7 +161,7 @@ def _prepare_classifier(dataf):
                 'X_scaler': X_test_scaler}
     return out_dici
 
-def _prepare_regressor(dataf, dep_var):
+def prepare_regressor(dataf, dep_var):
     dataf = dataf.copy()
 
     y = dataf['dep_var']
@@ -196,12 +196,16 @@ def _prepare_regressor(dataf, dep_var):
                            weight = weights_test)
 
 
-    out_dici = {'y_scaler': y_test_scaler,
-                'X_scaler': X_test_scaler,
+    out_dici = {'X_train': X_train_scaled,
+                'X_test': X_test_scaled,
+                'y_train': y_train,
+                'y_test': y_test,
                 'lgb_train': lgb_train,
                 'lgb_test': lgb_test,
                 'features': feature_names,
-                'weights': weights_train}
+                'weights': weights_train,
+                'X_scaler': X_test_scaler,
+                'y_scaler': y_test_scaler}
     pickle.dump(y_test_scaler,
                 open(model_path / str(dep_var + "_scaler_ext"), 'wb'))
     return out_dici
@@ -213,7 +217,7 @@ def _estimate(dataf, dep_var, type):
     dataf.dropna(inplace=True)
 
     if type == 'regression':
-        dict = _prepare_regressor(dataf, dep_var)
+        dict = prepare_regressor(dataf, dep_var)
         params = {'boosting_type' : 'gbdt',
                   'n_estimators': 350,
                   'objective' : 'l2',
@@ -228,7 +232,7 @@ def _estimate(dataf, dep_var, type):
         pickle.dump(dict['y_scaler'],
                     open(model_path / str(dep_var + "_y_scaler_multi"), 'wb'))
     elif type == 'binary':
-            dict = _prepare_classifier(dataf)
+            dict = prepare_classifier(dataf)
             params = {'task' : 'train',
                 'boosting_type' : 'gbdt',
                 'n_estimators': 350,
@@ -240,7 +244,7 @@ def _estimate(dataf, dep_var, type):
                 'verbose': 0,
                 'early_stopping_rounds': 5}
     else:
-        dict = _prepare_classifier(dataf)
+        dict = prepare_classifier(dataf)
         params = {'task' : 'train',
                   'boosting_type' : 'gbdt',
                   'n_estimators': 350,
@@ -275,5 +279,5 @@ if __name__ == "__main__":
 
     _estimate(df1, "birth", "binary")
     _estimate(df1, "employment_status", "multiclass")
-    _estimate(df1, "hours", "regression")
-    _estimate(df1, "gross_earnings", "regression")
+    _estimate(df1[df1["working"]==1], "hours", "regression")
+    _estimate(df1[df1["working"]==1], "gross_earnings", "regression")
